@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/aaronjmars-web3-research-mcp-badge.png)](https://mseep.ai/app/aaronjmars-web3-research-mcp)
+
 # Web3 Research MCP
 [![smithery badge](https://smithery.ai/badge/@aaronjmars/web3-research-mcp)](https://smithery.ai/server/@aaronjmars/web3-research-mcp)
 
