@@ -1,4 +1,5 @@
 # Web3 Research MCP
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/aaronjmars/web3-research-mcp)](https://archestra.ai/mcp-catalog/aaronjmars__web3-research-mcp)
 [![smithery badge](https://smithery.ai/badge/@aaronjmars/web3-research-mcp)](https://smithery.ai/server/@aaronjmars/web3-research-mcp)
 
 Deep Research for crypto - free & fully local 🧠
