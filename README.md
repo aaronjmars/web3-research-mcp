@@ -1,5 +1,6 @@
 # Web3 Research MCP
 [![smithery badge](https://smithery.ai/badge/@aaronjmars/web3-research-mcp)](https://smithery.ai/server/@aaronjmars/web3-research-mcp)
+[![MCPAmpel](https://img.shields.io/endpoint?url=https://mcpampel.com/badge/aaronjmars/web3-research-mcp.json)](https://mcpampel.com/repo/aaronjmars/web3-research-mcp)
 
 Deep Research for crypto - free & fully local 🧠
 
