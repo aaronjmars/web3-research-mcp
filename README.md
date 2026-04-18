@@ -130,6 +130,23 @@ Parameters:
 - tokenTicker: Ticker symbol
 - source: Source to search (e.g., 'CoinGecko', 'DeFiLlama', 'News')
 
+### coingecko-data
+
+Fetches live market data directly from the CoinGecko public API — price, market cap, 24h/7d/30d changes, ATH/ATL, circulating supply, contract addresses across chains, and social/dev links. Bypasses the 403 issues of HTML scraping.
+
+Parameters:
+- tokenName: Full name of the token (e.g., 'Bitcoin')
+- tokenTicker: Ticker symbol (e.g., 'BTC')
+
+No API key required. Uses the free public tier (~30 req/min).
+
+### coingecko-search
+
+Searches CoinGecko's coin index and returns candidate matches with their CoinGecko IDs. Useful when the ticker is ambiguous (e.g., multiple tokens with the same symbol).
+
+Parameters:
+- query: Search query — name, ticker, or contract address
+
 ## 📝 Prompts
 
 ### token-research
