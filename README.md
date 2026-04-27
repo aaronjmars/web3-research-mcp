@@ -140,6 +140,8 @@ Parameters:
 
 No API key required. Uses the free public tier (~30 req/min).
 
+Optional: set `COINGECKO_API_KEY` in the environment to use a CoinGecko Pro API key. When set, requests are sent to `https://pro-api.coingecko.com/api/v3` with the `x-cg-pro-api-key` header. Requests time out after 15s.
+
 ### coingecko-search
 
 Searches CoinGecko's coin index and returns candidate matches with their CoinGecko IDs. Useful when the ticker is ambiguous (e.g., multiple tokens with the same symbol).
