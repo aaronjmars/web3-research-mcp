@@ -3,7 +3,11 @@ import { z } from "zod";
 import fetch from "node-fetch";
 import ResearchStorage from "../storage/researchStorage.js";
 
-const COINGECKO_BASE = "https://api.coingecko.com/api/v3";
+const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY;
+const COINGECKO_BASE = COINGECKO_API_KEY
+  ? "https://pro-api.coingecko.com/api/v3"
+  : "https://api.coingecko.com/api/v3";
+const COINGECKO_TIMEOUT_MS = 15000;
 
 interface CoinGeckoSearchResult {
   id: string;
@@ -19,12 +23,34 @@ interface CoinGeckoSearchResponse {
 }
 
 async function cgFetch(path: string): Promise<any> {
-  const response = await fetch(`${COINGECKO_BASE}${path}`, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "web3-research-mcp",
-    },
-  });
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "User-Agent": "web3-research-mcp",
+  };
+  if (COINGECKO_API_KEY) {
+    headers["x-cg-pro-api-key"] = COINGECKO_API_KEY;
+  }
+
+  // node-fetch v2 doesn't support AbortSignal.timeout(); use AbortController.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), COINGECKO_TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch(`${COINGECKO_BASE}${path}`, {
+      headers,
+      signal: controller.signal as any,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        `CoinGecko request timed out after ${COINGECKO_TIMEOUT_MS}ms`
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (response.status === 429) {
     throw new Error(
@@ -41,10 +67,16 @@ async function cgFetch(path: string): Promise<any> {
   return response.json();
 }
 
+interface ResolveCoinResult {
+  coin: CoinGeckoSearchResult;
+  ambiguous: boolean;
+  query: string;
+}
+
 async function resolveCoinId(
   tokenName: string,
   tokenTicker: string
-): Promise<CoinGeckoSearchResult | null> {
+): Promise<ResolveCoinResult | null> {
   const queries = [tokenTicker, tokenName].filter(Boolean);
 
   for (const query of queries) {
@@ -61,12 +93,12 @@ async function resolveCoinId(
     const tickerMatch = coins.find(
       (c) => c.symbol?.toUpperCase() === tickerUpper
     );
-    if (tickerMatch) return tickerMatch;
+    if (tickerMatch) return { coin: tickerMatch, ambiguous: false, query };
 
     const nameMatch = coins.find((c) => c.name?.toLowerCase() === nameLower);
-    if (nameMatch) return nameMatch;
+    if (nameMatch) return { coin: nameMatch, ambiguous: false, query };
 
-    return coins[0];
+    return { coin: coins[0], ambiguous: coins.length > 1, query };
   }
 
   return null;
@@ -166,8 +198,8 @@ export function registerCoinGeckoTools(
       );
 
       try {
-        const match = await resolveCoinId(tokenName, tokenTicker);
-        if (!match) {
+        const resolved = await resolveCoinId(tokenName, tokenTicker);
+        if (!resolved) {
           return {
             isError: true,
             content: [
@@ -179,6 +211,8 @@ export function registerCoinGeckoTools(
           };
         }
 
+        const { coin: match, ambiguous, query: matchedQuery } = resolved;
+
         const coin = await cgFetch(
           `/coins/${encodeURIComponent(
             match.id
@@ -186,13 +220,16 @@ export function registerCoinGeckoTools(
         );
 
         const summary = formatMarketSummary(coin);
+        const ambiguityWarning = ambiguous
+          ? `> ⚠️ Multiple matches found for "${matchedQuery}"; showing top result. Use coingecko-search to disambiguate.\n\n`
+          : "";
         const resourceId = `coingecko_${match.id}_${new Date().getTime()}`;
 
         storage.addToSection("resources", {
           [resourceId]: {
             url: `${COINGECKO_BASE}/coins/${match.id}`,
             format: "markdown",
-            content: summary,
+            content: `${ambiguityWarning}${summary}`,
             title: `CoinGecko: ${coin.name} (${(coin.symbol ?? "").toUpperCase()})`,
             source: "CoinGecko",
             fetchedAt: new Date().toISOString(),
@@ -216,7 +253,7 @@ export function registerCoinGeckoTools(
           content: [
             {
               type: "text",
-              text: `${summary}\n\nSaved as resource: research://resource/${resourceId}`,
+              text: `${ambiguityWarning}${summary}\n\nSaved as resource: research://resource/${resourceId}`,
             },
           ],
         };
