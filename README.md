@@ -149,6 +149,23 @@ Searches CoinGecko's coin index and returns candidate matches with their CoinGec
 Parameters:
 - query: Search query — name, ticker, or contract address
 
+### defillama-data
+
+Fetches protocol data directly from the DeFiLlama public API — total TVL, per-chain TVL breakdown, fees (24h/7d/30d/all-time), token addresses, fundraising rounds, and links. Bypasses HTML scraping for the most common DeFi-protocol lookup.
+
+Parameters:
+- tokenName: Full protocol/token name (e.g., 'Uniswap')
+- tokenTicker: Ticker symbol (e.g., 'UNI')
+
+No API key required. Uses the free public API. Requests time out after 15s. The protocol index is cached for 5 minutes per process to avoid hammering `/protocols` on every call.
+
+### defillama-search
+
+Searches DeFiLlama's protocol index and returns candidate matches with their slugs, TVL, and category. Useful when the ticker is ambiguous (e.g., multiple protocols with similar names).
+
+Parameters:
+- query: Search query — protocol name, ticker, or slug
+
 ## 📝 Prompts
 
 ### token-research
