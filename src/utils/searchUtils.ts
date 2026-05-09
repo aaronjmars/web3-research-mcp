@@ -2,6 +2,8 @@ import * as DDG from "duck-duck-scrape";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 
+const FETCH_CONTENT_TIMEOUT_MS = 15000;
+
 export const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -68,6 +70,13 @@ export async function fetchContent(
   }
 
   for (let i = 0; i <= retries; i++) {
+    // node-fetch v2 doesn't support AbortSignal.timeout(); use AbortController.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      FETCH_CONTENT_TIMEOUT_MS
+    );
+
     try {
       await sleep(1000 + Math.random() * 2000);
 
@@ -92,6 +101,7 @@ export async function fetchContent(
           "Sec-Fetch-User": "?1",
         },
         redirect: "follow",
+        signal: controller.signal as any,
       });
 
       if (!response.ok) {
@@ -126,13 +136,21 @@ export async function fetchContent(
             return $text("body").text().replace(/\s+/g, " ").trim();
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      const wrapped =
+        error?.name === "AbortError"
+          ? new Error(
+              `Request to ${url} timed out after ${FETCH_CONTENT_TIMEOUT_MS}ms`
+            )
+          : error;
       if (i < retries) {
         const delay = 3000 * Math.pow(2, i);
         await sleep(delay);
       } else {
-        throw error;
+        throw wrapped;
       }
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
