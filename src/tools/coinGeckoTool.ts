@@ -22,6 +22,31 @@ interface CoinGeckoSearchResponse {
   coins?: CoinGeckoSearchResult[];
 }
 
+interface CoinGeckoTicker {
+  base?: string;
+  target?: string;
+  market?: {
+    name?: string;
+    identifier?: string;
+    has_trading_incentive?: boolean;
+  };
+  last?: number | null;
+  volume?: number | null;
+  converted_last?: { usd?: number | null };
+  converted_volume?: { usd?: number | null };
+  trust_score?: "green" | "yellow" | "red" | null;
+  bid_ask_spread_percentage?: number | null;
+  trade_url?: string | null;
+  last_traded_at?: string | null;
+  is_anomaly?: boolean;
+  is_stale?: boolean;
+}
+
+interface CoinGeckoTickersResponse {
+  name?: string;
+  tickers?: CoinGeckoTicker[];
+}
+
 async function cgFetch(path: string): Promise<any> {
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -176,6 +201,71 @@ function formatMarketSummary(coin: any): string {
     .join("\n");
 }
 
+function formatTickersSummary(
+  coinName: string,
+  tickerSymbol: string,
+  tickers: CoinGeckoTicker[],
+  limit: number
+): string {
+  // Drop anomalies/stales (CoinGecko marks low-confidence prints), then sort
+  // by 24h USD volume desc so the deepest venues land at the top.
+  const cleaned = tickers
+    .filter((t) => !t.is_anomaly && !t.is_stale)
+    .filter((t) => typeof t.converted_volume?.usd === "number")
+    .sort(
+      (a, b) =>
+        (b.converted_volume?.usd ?? 0) - (a.converted_volume?.usd ?? 0)
+    );
+
+  const totalVolume = cleaned.reduce(
+    (sum, t) => sum + (t.converted_volume?.usd ?? 0),
+    0
+  );
+
+  const fmtUsd = (n: number | null | undefined, digits = 0): string => {
+    if (n == null || !isFinite(n)) return "n/a";
+    return `$${n.toLocaleString("en-US", { maximumFractionDigits: digits })}`;
+  };
+
+  const top = cleaned.slice(0, limit);
+
+  const trustGlyph = (t: CoinGeckoTicker["trust_score"]): string => {
+    if (t === "green") return "🟢";
+    if (t === "yellow") return "🟡";
+    if (t === "red") return "🔴";
+    return "⚪";
+  };
+
+  const rows = top.map((t) => {
+    const pair = `${t.base ?? "?"}/${t.target ?? "?"}`;
+    const exchange = t.market?.name ?? "unknown";
+    const price = fmtUsd(t.converted_last?.usd, 6);
+    const vol = fmtUsd(t.converted_volume?.usd, 0);
+    const spread =
+      typeof t.bid_ask_spread_percentage === "number"
+        ? `${t.bid_ask_spread_percentage.toFixed(2)}%`
+        : "n/a";
+    const link = t.trade_url ? ` — [trade](${t.trade_url})` : "";
+    return `  - ${trustGlyph(t.trust_score)} ${exchange} (${pair}): ${price} · 24h ${vol} · spread ${spread}${link}`;
+  });
+
+  const greenCount = cleaned.filter((t) => t.trust_score === "green").length;
+  const yellowCount = cleaned.filter((t) => t.trust_score === "yellow").length;
+  const redOrNullCount = cleaned.length - greenCount - yellowCount;
+
+  return [
+    `# ${coinName} (${tickerSymbol.toUpperCase()}) — CoinGecko exchange listings`,
+    "",
+    "## Summary",
+    `- Active markets: ${cleaned.length} (showing top ${top.length} by 24h volume)`,
+    `- Total reported 24h volume: ${fmtUsd(totalVolume, 0)}`,
+    `- Trust score split: ${greenCount} green · ${yellowCount} yellow · ${redOrNullCount} red/unrated`,
+    "",
+    "## Top venues",
+    rows.length > 0 ? rows.join("\n") : "  (no active non-stale markets)",
+  ].join("\n");
+}
+
 export function registerCoinGeckoTools(
   server: McpServer,
   storage: ResearchStorage
@@ -327,6 +417,100 @@ export function registerCoinGeckoTools(
             {
               type: "text",
               text: `Error searching CoinGecko: ${error}`,
+            },
+          ],
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "coingecko-tickers",
+    {
+      tokenName: z.string().describe("Full name of the token (e.g., 'Bitcoin')"),
+      tokenTicker: z.string().describe("Ticker symbol (e.g., 'BTC')"),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(50)
+        .default(15)
+        .describe("How many top venues to return (sorted by 24h USD volume)"),
+    },
+    async ({
+      tokenName,
+      tokenTicker,
+      limit,
+    }: {
+      tokenName: string;
+      tokenTicker: string;
+      limit: number;
+    }) => {
+      storage.addLogEntry(
+        `Fetching CoinGecko tickers for ${tokenName} (${tokenTicker})`
+      );
+
+      try {
+        const resolved = await resolveCoinId(tokenName, tokenTicker);
+        if (!resolved) {
+          return {
+            isError: true,
+            content: [
+              {
+                type: "text",
+                text: `CoinGecko: no coin found matching ${tokenName} (${tokenTicker})`,
+              },
+            ],
+          };
+        }
+
+        const { coin: match, ambiguous, query: matchedQuery } = resolved;
+
+        const data = (await cgFetch(
+          `/coins/${encodeURIComponent(
+            match.id
+          )}/tickers?include_exchange_logo=false&order=volume_desc&depth=false`
+        )) as CoinGeckoTickersResponse;
+
+        const tickers = data.tickers ?? [];
+        const summary = formatTickersSummary(
+          match.name,
+          match.symbol ?? tokenTicker,
+          tickers,
+          limit
+        );
+        const ambiguityWarning = ambiguous
+          ? `> ⚠️ Multiple matches found for "${matchedQuery}"; showing top result. Use coingecko-search to disambiguate.\n\n`
+          : "";
+        const resourceId = `coingecko_tickers_${match.id}_${new Date().getTime()}`;
+
+        storage.addToSection("resources", {
+          [resourceId]: {
+            url: `${COINGECKO_BASE}/coins/${match.id}/tickers`,
+            format: "markdown",
+            content: `${ambiguityWarning}${summary}`,
+            title: `CoinGecko tickers: ${match.name} (${(match.symbol ?? "").toUpperCase()})`,
+            source: "CoinGecko",
+            fetchedAt: new Date().toISOString(),
+          },
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `${ambiguityWarning}${summary}\n\nSaved as resource: research://resource/${resourceId}`,
+            },
+          ],
+        };
+      } catch (error) {
+        storage.addLogEntry(`CoinGecko tickers fetch failed: ${error}`);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `Error fetching CoinGecko tickers: ${error}`,
             },
           ],
         };
