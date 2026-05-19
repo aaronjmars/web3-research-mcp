@@ -149,6 +149,17 @@ Searches CoinGecko's coin index and returns candidate matches with their CoinGec
 Parameters:
 - query: Search query — name, ticker, or contract address
 
+### coingecko-tickers
+
+Fetches active exchange listings for a token from CoinGecko — which CEXs/DEXs trade the pair, per-venue 24h USD volume, last price, bid-ask spread, trust score, and trade URL. Sorted by 24h USD volume desc; anomalies and stale prints are filtered out. Bypasses HTML scraping for the "where does this token actually trade" question.
+
+Parameters:
+- tokenName: Full name of the token (e.g., 'Bitcoin')
+- tokenTicker: Ticker symbol (e.g., 'BTC')
+- limit: How many top venues to return (default 15, max 50)
+
+No API key required. Uses the free public tier. Requests time out after 15s.
+
 ### defillama-data
 
 Fetches protocol data directly from the DeFiLlama public API — total TVL, per-chain TVL breakdown, fees (24h/7d/30d/all-time), token addresses, fundraising rounds, and links. Bypasses HTML scraping for the most common DeFi-protocol lookup.
