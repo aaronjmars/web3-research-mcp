@@ -95,7 +95,22 @@ async function cgFetch(path: string): Promise<any> {
 interface ResolveCoinResult {
   coin: CoinGeckoSearchResult;
   ambiguous: boolean;
+  candidateCount: number;
+  matchedOn: string;
   query: string;
+}
+
+// CoinGecko convention: lower market_cap_rank = bigger token. Null ranks
+// (unranked coins) sort last. Mirrors DeFiLlama's `pickHighestTvl` so both
+// resolvers break ticker/name ties the same way.
+function pickBestRank(
+  candidates: CoinGeckoSearchResult[]
+): CoinGeckoSearchResult {
+  return [...candidates].sort((a, b) => {
+    const ra = a.market_cap_rank ?? Number.POSITIVE_INFINITY;
+    const rb = b.market_cap_rank ?? Number.POSITIVE_INFINITY;
+    return ra - rb;
+  })[0];
 }
 
 async function resolveCoinId(
@@ -115,15 +130,44 @@ async function resolveCoinId(
     const tickerUpper = tokenTicker.toUpperCase();
     const nameLower = tokenName.toLowerCase();
 
-    const tickerMatch = coins.find(
-      (c) => c.symbol?.toUpperCase() === tickerUpper
-    );
-    if (tickerMatch) return { coin: tickerMatch, ambiguous: false, query };
+    if (tickerUpper) {
+      const tickerMatches = coins.filter(
+        (c) => c.symbol?.toUpperCase() === tickerUpper
+      );
+      if (tickerMatches.length > 0) {
+        return {
+          coin: pickBestRank(tickerMatches),
+          ambiguous: tickerMatches.length > 1,
+          candidateCount: tickerMatches.length,
+          matchedOn: `symbol "${tickerUpper}"`,
+          query,
+        };
+      }
+    }
 
-    const nameMatch = coins.find((c) => c.name?.toLowerCase() === nameLower);
-    if (nameMatch) return { coin: nameMatch, ambiguous: false, query };
+    if (nameLower) {
+      const nameMatches = coins.filter(
+        (c) => c.name?.toLowerCase() === nameLower
+      );
+      if (nameMatches.length > 0) {
+        return {
+          coin: pickBestRank(nameMatches),
+          ambiguous: nameMatches.length > 1,
+          candidateCount: nameMatches.length,
+          matchedOn: `name "${tokenName}"`,
+          query,
+        };
+      }
+    }
 
-    return { coin: coins[0], ambiguous: coins.length > 1, query };
+    // No exact match — fall back to CoinGecko's own relevance ordering.
+    return {
+      coin: coins[0],
+      ambiguous: coins.length > 1,
+      candidateCount: coins.length,
+      matchedOn: `fuzzy match for "${query}"`,
+      query,
+    };
   }
 
   return null;
@@ -301,7 +345,7 @@ export function registerCoinGeckoTools(
           };
         }
 
-        const { coin: match, ambiguous, query: matchedQuery } = resolved;
+        const { coin: match, ambiguous, candidateCount, matchedOn } = resolved;
 
         const coin = await cgFetch(
           `/coins/${encodeURIComponent(
@@ -311,7 +355,7 @@ export function registerCoinGeckoTools(
 
         const summary = formatMarketSummary(coin);
         const ambiguityWarning = ambiguous
-          ? `> ⚠️ Multiple matches found for "${matchedQuery}"; showing top result. Use coingecko-search to disambiguate.\n\n`
+          ? `> ⚠️ ${candidateCount} coins matched on ${matchedOn}; showing highest-rank match (\`${match.id}\`). Use \`coingecko-search\` to disambiguate.\n\n`
           : "";
         const resourceId = `coingecko_${match.id}_${new Date().getTime()}`;
 
@@ -464,7 +508,7 @@ export function registerCoinGeckoTools(
           };
         }
 
-        const { coin: match, ambiguous, query: matchedQuery } = resolved;
+        const { coin: match, ambiguous, candidateCount, matchedOn } = resolved;
 
         const data = (await cgFetch(
           `/coins/${encodeURIComponent(
@@ -480,7 +524,7 @@ export function registerCoinGeckoTools(
           limit
         );
         const ambiguityWarning = ambiguous
-          ? `> ⚠️ Multiple matches found for "${matchedQuery}"; showing top result. Use coingecko-search to disambiguate.\n\n`
+          ? `> ⚠️ ${candidateCount} coins matched on ${matchedOn}; showing highest-rank match (\`${match.id}\`). Use \`coingecko-search\` to disambiguate.\n\n`
           : "";
         const resourceId = `coingecko_tickers_${match.id}_${new Date().getTime()}`;
 
