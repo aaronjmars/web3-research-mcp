@@ -162,7 +162,7 @@ No API key required. Uses the free public tier. Requests time out after 15s.
 
 ### defillama-data
 
-Fetches protocol data directly from the DeFiLlama public API — total TVL, per-chain TVL breakdown, fees (24h/7d/30d/all-time), token addresses, fundraising rounds, and links. Bypasses HTML scraping for the most common DeFi-protocol lookup.
+Fetches protocol data directly from the DeFiLlama public API — total TVL, ATH TVL with date, 30/90/365-day TVL change vs current, market cap, per-chain TVL breakdown, fees (24h/7d/30d/all-time), token addresses, fundraising rounds, and links. Bypasses HTML scraping for the most common DeFi-protocol lookup.
 
 Parameters:
 - tokenName: Full protocol/token name (e.g., 'Uniswap')
