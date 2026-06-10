@@ -6,6 +6,7 @@ import ResearchStorage from "../storage/researchStorage.js";
 const DEFILLAMA_BASE = "https://api.llama.fi";
 const DEFILLAMA_TIMEOUT_MS = 15000;
 const PROTOCOLS_CACHE_TTL_MS = 5 * 60 * 1000;
+const STALE_CHART_THRESHOLD_SEC = 7 * 86400;
 
 interface DLProtocolListEntry {
   id: string;
@@ -58,9 +59,9 @@ interface DLTvlChartPoint {
 }
 
 interface TvlHistorySummary {
-  athTvl: number;
-  athDate: number;
-  fromAthPct: number;
+  athTvl: number | null;
+  athDate: number | null;
+  fromAthPct: number | null;
   current: number;
   d30Ago: number | null;
   d90Ago: number | null;
@@ -68,6 +69,9 @@ interface TvlHistorySummary {
   change30dPct: number | null;
   change90dPct: number | null;
   change365dPct: number | null;
+  // Date (unix seconds) of the last chart point, set only when the chart is
+  // more than STALE_CHART_THRESHOLD_SEC behind wall-clock (stale/delisted).
+  staleChartDate: number | null;
 }
 
 let protocolsCache: { data: DLProtocolListEntry[]; fetchedAt: number } | null =
@@ -226,6 +230,10 @@ function computeTvlHistory(
   );
   if (validPoints.length === 0) return null;
 
+  // The live API returns the chart date-ascending, but that's unenforced;
+  // sort defensively since the window math below walks from the end.
+  validPoints.sort((a, b) => a.date - b.date);
+
   let athTvl = 0;
   let athDate = 0;
   for (const p of validPoints) {
@@ -240,7 +248,14 @@ function computeTvlHistory(
   // back to the latest chart point if the index value is missing.
   const current =
     typeof currentTvl === "number" ? currentTvl : last.totalLiquidityUSD;
+  // Windows anchor to the last chart point (the right call for sparse charts),
+  // but for stale/delisted protocols "30d ago" then silently means "30d before
+  // the last datapoint" — surface that instead of staying quiet.
   const nowSec = last.date;
+  const staleChartDate =
+    Date.now() / 1000 - last.date > STALE_CHART_THRESHOLD_SEC
+      ? last.date
+      : null;
 
   const findAgo = (daysAgo: number): number | null => {
     const target = nowSec - daysAgo * 86400;
@@ -261,10 +276,14 @@ function computeTvlHistory(
     return ((current - prev) / prev) * 100;
   };
 
+  // An all-zero chart has no meaningful ATH; null lets the formatter skip
+  // those lines instead of rendering "ATH TVL: $0 (n/a)".
+  const hasAth = athTvl > 0;
+
   return {
-    athTvl,
-    athDate,
-    fromAthPct: athTvl > 0 ? ((current - athTvl) / athTvl) * 100 : 0,
+    athTvl: hasAth ? athTvl : null,
+    athDate: hasAth ? athDate : null,
+    fromAthPct: hasAth ? ((current - athTvl) / athTvl) * 100 : null,
     current,
     d30Ago: d30,
     d90Ago: d90,
@@ -272,6 +291,7 @@ function computeTvlHistory(
     change30dPct: pctChange(d30),
     change90dPct: pctChange(d90),
     change365dPct: pctChange(d365),
+    staleChartDate,
   };
 }
 
@@ -322,13 +342,15 @@ function formatProtocolSummary(
 
   const tvlHistoryLines: string[] = [];
   if (tvlHistory) {
-    const athDateStr = tvlHistory.athDate
-      ? new Date(tvlHistory.athDate * 1000).toISOString().slice(0, 10)
-      : "n/a";
-    tvlHistoryLines.push(
-      `- ATH TVL: ${fmtUsd(tvlHistory.athTvl, 0)} (${athDateStr})`
-    );
-    tvlHistoryLines.push(`- From ATH: ${fmtPct(tvlHistory.fromAthPct)}`);
+    if (tvlHistory.athTvl != null) {
+      const athDateStr = tvlHistory.athDate
+        ? new Date(tvlHistory.athDate * 1000).toISOString().slice(0, 10)
+        : "n/a";
+      tvlHistoryLines.push(
+        `- ATH TVL: ${fmtUsd(tvlHistory.athTvl, 0)} (${athDateStr})`
+      );
+      tvlHistoryLines.push(`- From ATH: ${fmtPct(tvlHistory.fromAthPct)}`);
+    }
     if (tvlHistory.d30Ago != null) {
       tvlHistoryLines.push(
         `- 30d ago: ${fmtUsd(tvlHistory.d30Ago, 0)} (change ${fmtPct(
@@ -348,6 +370,14 @@ function formatProtocolSummary(
         `- 365d ago: ${fmtUsd(tvlHistory.d365Ago, 0)} (change ${fmtPct(
           tvlHistory.change365dPct
         )})`
+      );
+    }
+    if (tvlHistory.staleChartDate != null) {
+      const staleDateStr = new Date(tvlHistory.staleChartDate * 1000)
+        .toISOString()
+        .slice(0, 10);
+      tvlHistoryLines.push(
+        `- Note: TVL chart last updated ${staleDateStr}; ATH/history windows are relative to that date.`
       );
     }
   }
@@ -493,7 +523,11 @@ export function registerDeFiLlamaTools(
             category: detail.category,
             tvl_usd: totalTvl,
             tvl_ath_usd: tvlHistory?.athTvl ?? null,
-            tvl_ath_date: tvlHistory?.athDate ?? null,
+            // ISO date, matching the rendered summary and the ISO-string
+            // convention of stored records (e.g. `fetchedAt`).
+            tvl_ath_date: tvlHistory?.athDate
+              ? new Date(tvlHistory.athDate * 1000).toISOString().slice(0, 10)
+              : null,
             tvl_from_ath_pct: tvlHistory?.fromAthPct ?? null,
             tvl_change_30d_pct: tvlHistory?.change30dPct ?? null,
             tvl_change_90d_pct: tvlHistory?.change90dPct ?? null,
