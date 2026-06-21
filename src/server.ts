@@ -12,7 +12,7 @@ const storage = new ResearchStorage("./research_data");
 
 const server = new McpServer({
   name: "web3-research-mcp",
-  version: "1.0.0",
+  version: "1.0.1",
 });
 
 server.resource("research-status", "research://status", async (uri) => ({
