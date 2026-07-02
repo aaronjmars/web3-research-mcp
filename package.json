@@ -36,7 +36,7 @@
     "@types/node": "^26.1.0",
     "@types/node-fetch": "^2.6.12",
     "@types/turndown": "^5.0.4",
-    "typescript": "^5.8.3"
+    "typescript": "^6.0.3"
   },
   "engines": {
     "node": ">=16.0.0"
