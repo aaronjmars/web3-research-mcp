@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.35",
-    "@types/node": "^22.14.0",
+    "@types/node": "^26.1.0",
     "@types/node-fetch": "^2.6.12",
     "@types/turndown": "^5.0.4",
     "typescript": "^5.8.3"
