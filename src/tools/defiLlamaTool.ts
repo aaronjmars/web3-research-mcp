@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod/v3";
 import fetch from "node-fetch";
 import ResearchStorage from "../storage/researchStorage.js";
 
@@ -447,7 +448,17 @@ export function registerDeFiLlamaTools(
   server: McpServer,
   storage: ResearchStorage
 ): void {
-  server.tool(
+  // The MCP SDK 1.9.0 is typed against zod v3; with zod v4 installed we build
+  // schemas via zod's v3 compatibility entrypoint ("zod/v3"). Register through a
+  // non-generic alias so the SDK's tool<Args extends ZodRawShape> overload does
+  // not trigger excessively deep type instantiation across the two zod copies.
+  const tool = server.tool.bind(server) as (
+    name: string,
+    paramsSchema: z.ZodRawShape,
+    cb: (args: any) => CallToolResult | Promise<CallToolResult>
+  ) => void;
+
+  tool(
     "defillama-data",
     {
       tokenName: z
@@ -563,7 +574,7 @@ export function registerDeFiLlamaTools(
     }
   );
 
-  server.tool(
+  tool(
     "defillama-search",
     {
       query: z

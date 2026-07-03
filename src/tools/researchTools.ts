@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod/v3";
 import ResearchStorage from "../storage/researchStorage.js";
 import {
   performSearch,
@@ -31,7 +32,17 @@ export function registerResearchTools(
   server: McpServer,
   storage: ResearchStorage
 ): void {
-  server.tool(
+  // The MCP SDK 1.9.0 is typed against zod v3; with zod v4 installed we build
+  // schemas via zod's v3 compatibility entrypoint ("zod/v3"). Register through a
+  // non-generic alias so the SDK's tool<Args extends ZodRawShape> overload does
+  // not trigger excessively deep type instantiation across the two zod copies.
+  const tool = server.tool.bind(server) as (
+    name: string,
+    paramsSchema: z.ZodRawShape,
+    cb: (args: any) => CallToolResult | Promise<CallToolResult>
+  ) => void;
+
+  tool(
     "search",
     {
       query: z.string().describe("Search query"),
@@ -79,7 +90,7 @@ export function registerResearchTools(
     }
   );
 
-  server.tool(
+  tool(
     "create-research-plan",
     {
       tokenName: z.string().describe("Token name"),
@@ -166,7 +177,7 @@ export function registerResearchTools(
     }
   );
 
-  server.tool(
+  tool(
     "research-with-keywords",
     {
       tokenName: z.string().describe("Name of the token"),
@@ -251,7 +262,7 @@ export function registerResearchTools(
     }
   );
 
-  server.tool(
+  tool(
     "update-status",
     {
       section: z
@@ -319,7 +330,7 @@ export function registerResearchTools(
     }
   );
 
-  server.tool(
+  tool(
     "fetch-content",
     {
       url: z
@@ -397,7 +408,7 @@ export function registerResearchTools(
     }
   );
 
-  server.tool(
+  tool(
     "search-source",
     {
       tokenName: z.string().describe("Name of the token"),
@@ -484,7 +495,7 @@ export function registerResearchTools(
     }
   );
 
-  server.tool("list-resources", {}, async () => {
+  tool("list-resources", {}, async () => {
     try {
       const resources = storage.getAllResources();
       const resourceList = Object.keys(resources).map((id) => ({
@@ -521,7 +532,7 @@ export function registerResearchTools(
     }
   });
 
-  server.tool(
+  tool(
     "research-source",
     {
       tokenName: z.string().describe("Name of the token"),
@@ -640,7 +651,7 @@ export function registerResearchTools(
     }
   );
 
-  server.tool(
+  tool(
     "research-token",
     {
       tokenName: z.string().describe("Name of the token"),
