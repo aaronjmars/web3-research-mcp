@@ -32,7 +32,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/cheerio": "^0.22.35",
+    "@types/cheerio": "^1.0.0",
     "@types/node": "^26.1.0",
     "@types/node-fetch": "^2.6.12",
     "@types/turndown": "^5.0.4",
