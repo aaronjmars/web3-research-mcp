@@ -3,7 +3,8 @@ import {
   ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
+import type { GetPromptResult } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod/v3";
 
 import ResearchStorage from "./storage/researchStorage.js";
 import { registerAllTools } from "./tools/index.js";
@@ -14,6 +15,14 @@ const server = new McpServer({
   name: "web3-research-mcp",
   version: "1.0.1",
 });
+
+// The MCP SDK 1.9.0 is typed against zod v3; register the prompt through a
+// non-generic alias to avoid excessively deep type instantiation (see tools).
+const prompt = server.prompt.bind(server) as (
+  name: string,
+  argsSchema: z.ZodRawShape,
+  cb: (args: any) => GetPromptResult | Promise<GetPromptResult>
+) => void;
 
 server.resource("research-status", "research://status", async (uri) => ({
   contents: [
@@ -133,7 +142,7 @@ server.resource(
   }
 );
 
-server.prompt(
+prompt(
   "token-research",
   {
     tokenName: z.string().describe("The full name of the cryptocurrency token"),
