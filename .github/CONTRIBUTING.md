@@ -78,4 +78,4 @@ issue — follow [`SECURITY.md`](SECURITY.md) and report it privately.
 ## License
 
 By contributing, you agree that your contributions are licensed under the
-repository's [LICENSE](LICENSE) (MIT).
+repository's [LICENSE](../LICENSE) (MIT).
