@@ -12,7 +12,7 @@ const storage = new ResearchStorage("./research_data");
 
 const server = new McpServer({
   name: "web3-research-mcp",
-  version: "1.0.1",
+  version: "1.0.4",
 });
 
 server.resource("research-status", "research://status", async (uri) => ({
@@ -95,15 +95,7 @@ server.resource(
     const resource = storage.getResource(id);
 
     if (!resource) {
-      return {
-        contents: [
-          {
-            uri: uri.href,
-            text: `Resource not found: ${id}`,
-            mimeType: "text/plain",
-          },
-        ],
-      };
+      throw new Error(`Resource not found: ${id}`);
     }
 
     let mimeType = "text/plain";
@@ -191,9 +183,7 @@ For each section, explain what you discovered, what remains uncertain, and what 
 registerAllTools(server, storage);
 
 const transport = new StdioServerTransport();
-server
-  .connect(transport)
-  .then(() => {})
-  .catch((error) => {
-    console.error("Failed to start server:", error);
-  });
+server.connect(transport).catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+});

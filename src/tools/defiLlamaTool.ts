@@ -300,7 +300,11 @@ async function fetchFees(slug: string): Promise<DLFeesSummary | null> {
     return (await dlFetch(
       `/summary/fees/${encodeURIComponent(slug)}?dataType=dailyFees`
     )) as DLFeesSummary;
-  } catch {
+  } catch (error) {
+    // A 404 here is normal -- most protocols have no fee data. Anything else
+    // (rate limit, timeout) also lands as "n/a" downstream, so log it rather
+    // than let a failed call read as an authoritative absence of fees.
+    console.error(`DeFiLlama fees lookup failed for "${slug}": ${error}`);
     return null;
   }
 }

@@ -145,6 +145,9 @@ export async function fetchContent(
             )
           : error;
       if (i < retries) {
+        console.error(
+          `fetchContent attempt ${i + 1}/${retries + 1} for ${url} failed: ${wrapped}`
+        );
         const delay = 3000 * Math.pow(2, i);
         await sleep(delay);
       } else {
