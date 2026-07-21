@@ -34,14 +34,10 @@
     "cheerio": "^1.0.0-rc.12",
     "duck-duck-scrape": "^2.2.1",
     "node-fetch": "^3.3.2",
-    "turndown": "^7.1.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/cheerio": "^1.0.0",
     "@types/node": "^26.1.0",
-    "@types/node-fetch": "^2.6.12",
-    "@types/turndown": "^5.0.4",
     "typescript": "^7.0.2"
   },
   "engines": {

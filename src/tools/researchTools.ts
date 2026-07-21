@@ -5,12 +5,11 @@ import ResearchStorage from "../storage/researchStorage.js";
 import {
   performSearch,
   fetchContent,
-  searchMultipleSources,
   searchSource,
   sleep,
 } from "../utils/searchUtils.js";
 
-export async function getResourceContent(
+async function getResourceContent(
   url: string,
   storage: ResearchStorage
 ): Promise<string> {
@@ -534,125 +533,6 @@ export function registerResearchTools(
 
   tool(
     "research-source",
-    {
-      tokenName: z.string().describe("Name of the token"),
-      tokenTicker: z.string().describe("Ticker symbol of the token"),
-      source: z.string().describe("Single source to research"),
-    },
-    async ({
-      tokenName,
-      tokenTicker,
-      source,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-      source: string;
-    }) => {
-      storage.addLogEntry(
-        `Researching source: ${source} for ${tokenName} (${tokenTicker})`
-      );
-
-      try {
-        const query = `${tokenName} ${tokenTicker} ${source}`;
-
-        const results = await performSearch(query, "web");
-
-        if (!results.results || results.results.length === 0) {
-          storage.addLogEntry(`No results found for ${source}`);
-          return {
-            content: [
-              {
-                type: "text",
-                text: `No results found for ${source}`,
-              },
-            ],
-          };
-        }
-
-        const topResults = results.results.slice(0, 3);
-        storage.addToSection("searchResults", { [source]: topResults });
-
-        if (topResults[0] && topResults[0].url) {
-          try {
-            const url = topResults[0].url;
-            storage.addLogEntry(`Fetching content from ${url}`);
-            const content = await fetchContent(url, "markdown");
-
-            const resourceId = `${source.toLowerCase()}_${tokenName.toLowerCase()}_${new Date().getTime()}`;
-
-            storage.addToSection("resources", {
-              [resourceId]: {
-                url,
-                format: "markdown",
-                content,
-                title: topResults[0].title,
-                source,
-                fetchedAt: new Date().toISOString(),
-              },
-            });
-
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Researched ${source} for ${tokenName} (${tokenTicker}).\n\nTop result: ${
-                    topResults[0].title
-                  }\n\nContent saved as resource: research://resource/${resourceId}\n\nAll search results:\n${JSON.stringify(
-                    topResults,
-                    null,
-                    2
-                  )}`,
-                },
-              ],
-            };
-          } catch (error) {
-            storage.addLogEntry(
-              `Error fetching content from ${topResults[0].url}: ${error}`
-            );
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Found search results for ${source}, but couldn't fetch content: ${error}\n\nSearch results:\n${JSON.stringify(
-                    topResults,
-                    null,
-                    2
-                  )}`,
-                },
-              ],
-            };
-          }
-        }
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Search results for ${source}:\n\n${JSON.stringify(
-                topResults,
-                null,
-                2
-              )}`,
-            },
-          ],
-        };
-      } catch (error) {
-        storage.addLogEntry(`Error researching ${source}: ${error}`);
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text",
-              text: `Error researching ${source}: ${error}`,
-            },
-          ],
-        };
-      }
-    }
-  );
-
-  tool(
-    "research-token",
     {
       tokenName: z.string().describe("Name of the token"),
       tokenTicker: z.string().describe("Ticker symbol of the token"),

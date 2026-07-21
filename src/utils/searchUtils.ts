@@ -202,31 +202,3 @@ export async function searchSource(
 
   return performSearch(query, "web");
 }
-
-export async function searchMultipleSources(
-  tokenName: string,
-  tokenTicker: string,
-  sources: string[]
-): Promise<Record<string, any>> {
-  const results: Record<string, any> = {};
-
-  for (const source of sources) {
-    try {
-      await sleep(3000);
-
-      const searchResults = await searchSource(tokenName, tokenTicker, source);
-
-      results[source] = {
-        query: `${tokenName} ${tokenTicker} ${source}`,
-        topResults: searchResults.results
-          ? searchResults.results.slice(0, 5)
-          : [],
-      };
-    } catch (error) {
-      console.error(`Error searching ${source}: ${error}`);
-      results[source] = { error: String(error) };
-    }
-  }
-
-  return results;
-}
