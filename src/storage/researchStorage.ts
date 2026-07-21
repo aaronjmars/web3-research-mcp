@@ -6,36 +6,53 @@ export interface ResearchLog {
   message: string;
 }
 
+/** Lifecycle of a single section of the research plan. */
+export type PlanStatus = "planned" | "in_progress" | "completed";
+
+/** Lifecycle of the overall research run. */
+export type ResearchStatus = "not_started" | "in_progress" | "completed";
+
 export interface ResearchPlan {
   [key: string]: {
     description: string;
     sources: string[];
-    status: "planned" | "in_progress" | "completed";
+    status: PlanStatus;
   };
+}
+
+/**
+ * A saved page/API response, addressable at `research://resource/{id}`.
+ *
+ * `url` is optional because `research-with-keywords` stores an aggregate of
+ * several searches, which has no single source URL. `title` and `source` are
+ * optional because the raw `fetch-content` path does not know either.
+ */
+export interface ResearchResource {
+  url?: string;
+  format: string;
+  content: string;
+  title?: string;
+  source?: string;
+  fetchedAt: string;
 }
 
 export interface ResearchData {
   tokenName: string;
   tokenTicker: string;
   researchPlan: ResearchPlan;
-  searchResults: Record<string, any>;
-  technicalData: Record<string, any>;
-  marketData: Record<string, any>;
-  socialData: Record<string, any>;
-  newsData: Array<any>;
-  teamData: Record<string, any>;
-  relatedTokens: Array<any>;
-  resources: Record<
-    string,
-    {
-      url: string;
-      format: string;
-      content: string;
-      fetchedAt: string;
-    }
-  >;
-  researchData: Record<string, any>;
-  status: "not_started" | "in_progress" | "completed";
+  // These sections hold arbitrary third-party payloads (DDG results, CoinGecko
+  // and DeFiLlama JSON) and are only ever JSON.stringify'd back out, so
+  // `unknown` is the honest element type.
+  searchResults: Record<string, unknown>;
+  technicalData: Record<string, unknown>;
+  marketData: Record<string, unknown>;
+  socialData: Record<string, unknown>;
+  newsData: unknown[];
+  teamData: Record<string, unknown>;
+  relatedTokens: unknown[];
+  resources: Record<string, ResearchResource>;
+  researchData: Record<string, unknown>;
+  status: ResearchStatus;
   logs: ResearchLog[];
 }
 
@@ -43,7 +60,7 @@ export interface ResearchData {
 function emptyResearch(
   tokenName: string,
   tokenTicker: string,
-  status: ResearchData["status"]
+  status: ResearchStatus
 ): ResearchData {
   return {
     tokenName,
@@ -110,17 +127,17 @@ export class ResearchStorage {
 
   addToSection<K extends keyof ResearchData>(
     section: K,
-    data: Partial<ResearchData[K]> | any
+    data: Partial<ResearchData[K]>
   ): void {
     const currentSection = this.currentResearch[section];
 
     if (Array.isArray(currentSection)) {
-      (this.currentResearch[section] as any[]).push(data);
+      (this.currentResearch[section] as unknown[]).push(data);
       this.addLogEntry(`Added item to section: ${section as string}`);
     } else if (typeof currentSection === "object" && currentSection !== null) {
       this.currentResearch[section] = {
-        ...(currentSection as object),
-        ...(data as object),
+        ...(currentSection as Record<string, unknown>),
+        ...(data as Record<string, unknown>),
       } as ResearchData[K];
       this.addLogEntry(`Updated object section: ${section as string}`);
     } else {
@@ -130,11 +147,11 @@ export class ResearchStorage {
     }
   }
 
-  getResource(resourceId: string): any {
+  getResource(resourceId: string): ResearchResource | null {
     return this.currentResearch.resources[resourceId] || null;
   }
 
-  getAllResources(): Record<string, any> {
+  getAllResources(): Record<string, ResearchResource> {
     return this.currentResearch.resources;
   }
 

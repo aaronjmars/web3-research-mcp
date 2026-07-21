@@ -47,7 +47,40 @@ interface CoinGeckoTickersResponse {
   tickers?: CoinGeckoTicker[];
 }
 
-async function cgFetch(path: string): Promise<any> {
+/**
+ * The subset of `/coins/{id}` that `formatMarketSummary` and its caller
+ * actually read. Every field is optional -- CoinGecko omits most of them for
+ * long-tail coins, and this type must not promise more than the code checks.
+ */
+interface CoinGeckoCoinDetail {
+  name?: string;
+  symbol?: string;
+  market_cap_rank?: number | null;
+  market_data?: {
+    current_price?: { usd?: number | null };
+    market_cap?: { usd?: number | null };
+    total_volume?: { usd?: number | null };
+    ath?: { usd?: number | null };
+    atl?: { usd?: number | null };
+    price_change_percentage_24h?: number | null;
+    price_change_percentage_7d?: number | null;
+    price_change_percentage_30d?: number | null;
+    circulating_supply?: number | null;
+    max_supply?: number | null;
+  };
+  platforms?: Record<string, string | null>;
+  links?: {
+    homepage?: string[];
+    twitter_screen_name?: string | null;
+    telegram_channel_identifier?: string | null;
+    repos_url?: { github?: string[] };
+    subreddit_url?: string | null;
+  };
+}
+
+// The shape of a third-party JSON body is genuinely unknowable here; each call
+// site narrows with an explicit cast to the interface it needs.
+async function cgFetch(path: string): Promise<unknown> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "User-Agent": "web3-research-mcp",
@@ -67,8 +100,8 @@ async function cgFetch(path: string): Promise<any> {
       headers,
       signal: controller.signal,
     });
-  } catch (err: any) {
-    if (err?.name === "AbortError") {
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
       throw new Error(
         `CoinGecko request timed out after ${COINGECKO_TIMEOUT_MS}ms`
       );
@@ -183,7 +216,7 @@ function ambiguityNote(resolved: ResolveCoinResult): string {
   return `> ⚠️ ${resolved.candidateCount} coins matched on ${resolved.matchedOn}; showing highest-rank match (\`${resolved.coin.id}\`). Use \`coingecko-search\` to disambiguate.\n\n`;
 }
 
-function formatMarketSummary(coin: any): string {
+function formatMarketSummary(coin: CoinGeckoCoinDetail): string {
   const md = coin.market_data ?? {};
   const price = md.current_price?.usd;
   const mcap = md.market_cap?.usd;
@@ -350,11 +383,11 @@ export function registerCoinGeckoTools(
 
         const { coin: match } = resolved;
 
-        const coin = await cgFetch(
+        const coin = (await cgFetch(
           `/coins/${encodeURIComponent(
             match.id
           )}?localization=false&tickers=false&market_data=true&community_data=true&developer_data=true&sparkline=false`
-        );
+        )) as CoinGeckoCoinDetail;
 
         const summary = formatMarketSummary(coin);
         const ambiguityWarning = ambiguityNote(resolved);

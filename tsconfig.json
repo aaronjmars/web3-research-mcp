@@ -6,7 +6,6 @@
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "strict": true,
-    "noImplicitAny": false,
     "rootDir": "src",
     "outDir": "dist",
     "sourceMap": true,

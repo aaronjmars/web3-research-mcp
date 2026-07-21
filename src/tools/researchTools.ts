@@ -45,7 +45,7 @@ export function registerResearchTools(
       storage.addLogEntry(`Performing ${searchType} search for: "${query}"`);
 
       try {
-        const results = await performSearch(query, searchType as any);
+        const results = await performSearch(query, searchType);
 
         storage.addToSection("searchResults", {
           [searchType]: {
@@ -178,7 +178,7 @@ export function registerResearchTools(
       );
 
       try {
-        const results: Record<string, any> = {};
+        const results: Record<string, unknown> = {};
 
         for (const keyword of keywords) {
           const query = `${tokenName} ${tokenTicker} ${keyword}`;

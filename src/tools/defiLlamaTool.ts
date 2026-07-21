@@ -77,7 +77,9 @@ interface TvlHistorySummary {
 let protocolsCache: { data: DLProtocolListEntry[]; fetchedAt: number } | null =
   null;
 
-async function dlFetch(path: string): Promise<any> {
+// The shape of a third-party JSON body is genuinely unknowable here; each call
+// site narrows with an explicit cast to the interface it needs.
+async function dlFetch(path: string): Promise<unknown> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "User-Agent": "web3-research-mcp",
@@ -94,8 +96,8 @@ async function dlFetch(path: string): Promise<any> {
       headers,
       signal: controller.signal,
     });
-  } catch (err: any) {
-    if (err?.name === "AbortError") {
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
       throw new Error(
         `DeFiLlama request timed out after ${DEFILLAMA_TIMEOUT_MS}ms`
       );

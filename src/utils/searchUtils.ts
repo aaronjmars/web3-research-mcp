@@ -137,9 +137,9 @@ export async function fetchContent(
             return $text("body").text().replace(/\s+/g, " ").trim();
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       const wrapped =
-        error?.name === "AbortError"
+        error instanceof Error && error.name === "AbortError"
           ? new Error(
               `Request to ${url} timed out after ${FETCH_CONTENT_TIMEOUT_MS}ms`
             )
