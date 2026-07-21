@@ -9,7 +9,6 @@ import {
   type ImageSearchResults,
   type VideoSearchResults,
 } from "duck-duck-scrape";
-import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 
 const FETCH_CONTENT_TIMEOUT_MS = 15000;
@@ -71,7 +70,8 @@ export async function fetchContent(
   }
 
   for (let i = 0; i <= retries; i++) {
-    // node-fetch v2 doesn't support AbortSignal.timeout(); use AbortController.
+    // AbortController rather than AbortSignal.timeout() so the AbortError can be
+    // distinguished and rewritten into an explicit timeout message below.
     const controller = new AbortController();
     const timeoutId = setTimeout(
       () => controller.abort(),
@@ -102,7 +102,7 @@ export async function fetchContent(
           "Sec-Fetch-User": "?1",
         },
         redirect: "follow",
-        signal: controller.signal as any,
+        signal: controller.signal,
       });
 
       if (!response.ok) {

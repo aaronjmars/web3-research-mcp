@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod/v3";
-import fetch from "node-fetch";
+import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
 
 const DEFILLAMA_BASE = "https://api.llama.fi";
@@ -84,7 +83,8 @@ async function dlFetch(path: string): Promise<any> {
     "User-Agent": "web3-research-mcp",
   };
 
-  // node-fetch v2 doesn't support AbortSignal.timeout(); use AbortController.
+  // AbortController rather than AbortSignal.timeout() so the AbortError can be
+    // distinguished and rewritten into an explicit timeout message below.
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFILLAMA_TIMEOUT_MS);
 
@@ -92,7 +92,7 @@ async function dlFetch(path: string): Promise<any> {
   try {
     response = await fetch(`${DEFILLAMA_BASE}${path}`, {
       headers,
-      signal: controller.signal as any,
+      signal: controller.signal,
     });
   } catch (err: any) {
     if (err?.name === "AbortError") {

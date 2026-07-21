@@ -4,7 +4,7 @@ import {
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { GetPromptResult } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod/v3";
+import { z } from "zod";
 
 import ResearchStorage from "./storage/researchStorage.js";
 import { registerAllTools } from "./tools/index.js";

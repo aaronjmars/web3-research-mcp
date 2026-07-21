@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod/v3";
-import fetch from "node-fetch";
+import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
 
 const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY;
@@ -57,7 +56,8 @@ async function cgFetch(path: string): Promise<any> {
     headers["x-cg-pro-api-key"] = COINGECKO_API_KEY;
   }
 
-  // node-fetch v2 doesn't support AbortSignal.timeout(); use AbortController.
+  // AbortController rather than AbortSignal.timeout() so the AbortError can be
+    // distinguished and rewritten into an explicit timeout message below.
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), COINGECKO_TIMEOUT_MS);
 
@@ -65,7 +65,7 @@ async function cgFetch(path: string): Promise<any> {
   try {
     response = await fetch(`${COINGECKO_BASE}${path}`, {
       headers,
-      signal: controller.signal as any,
+      signal: controller.signal,
     });
   } catch (err: any) {
     if (err?.name === "AbortError") {

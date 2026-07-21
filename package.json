@@ -30,10 +30,9 @@
   "homepage": "https://github.com/aaronjmars/web3-research-mcp#readme",
   "bugs": "https://github.com/aaronjmars/web3-research-mcp/issues",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.9.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "cheerio": "^1.0.0-rc.12",
     "duck-duck-scrape": "^2.2.1",
-    "node-fetch": "^3.3.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -41,6 +40,6 @@
     "typescript": "^7.0.2"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   }
 }
