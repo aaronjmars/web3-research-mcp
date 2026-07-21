@@ -5,6 +5,3 @@ src/
 .idea/
 *.log
 tests/
-
-# Include dist directory in the package
-# !dist/

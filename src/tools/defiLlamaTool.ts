@@ -86,7 +86,7 @@ async function dlFetch(path: string): Promise<unknown> {
   };
 
   // AbortController rather than AbortSignal.timeout() so the AbortError can be
-    // distinguished and rewritten into an explicit timeout message below.
+  // distinguished and rewritten into an explicit timeout message below.
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFILLAMA_TIMEOUT_MS);
 
@@ -318,9 +318,7 @@ const fmtPct = (n: number | null | undefined): string => {
 };
 
 function parseAddresses(detail: DLProtocolDetail): string[] {
-  // DeFiLlama uses two formats:
-  // - top-level `address`: "ethereum:0xabc..." (single canonical address)
-  // - `currentChainTvls`: keys like "Ethereum", "Arbitrum-borrowed" (chains used)
+  // DeFiLlama's top-level `address` is chain-prefixed, e.g. "ethereum:0xabc...".
   const lines: string[] = [];
   if (detail.address && typeof detail.address === "string") {
     lines.push(`  - ${detail.address}`);

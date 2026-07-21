@@ -90,7 +90,7 @@ async function cgFetch(path: string): Promise<unknown> {
   }
 
   // AbortController rather than AbortSignal.timeout() so the AbortError can be
-    // distinguished and rewritten into an explicit timeout message below.
+  // distinguished and rewritten into an explicit timeout message below.
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), COINGECKO_TIMEOUT_MS);
 
