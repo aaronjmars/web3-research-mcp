@@ -19,8 +19,8 @@ and talks to it on stdin/stdout.
 - **`@modelcontextprotocol/sdk`** — `McpServer` + `StdioServerTransport`.
 - **`zod`** — tool/prompt input schemas.
 - **`duck-duck-scrape`** — web/news/image/video search (no API key).
-- **`node-fetch` + `cheerio` + `turndown`** — fetch and convert page content.
-- Node **>= 16** (CI builds on 20.x and 22.x).
+- **`cheerio`** — parse fetched HTML. Network I/O uses the global `fetch`.
+- Node **>= 18** (CI builds on 20.x and 22.x).
 
 ## Build & run
 
@@ -50,8 +50,9 @@ src/tools/researchTools.ts  search, fetch-content, research-with-keywords,
 src/tools/coinGeckoTool.ts  coingecko-data / coingecko-search / coingecko-tickers
 src/tools/defiLlamaTool.ts  defillama-data / defillama-search
 src/utils/searchUtils.ts    performSearch / fetchContent / searchSource (DDG + fetch)
-src/storage/researchStorage.ts  in-memory + on-disk research state and resources
-src/types/                  shared TypeScript types
+src/utils/format.ts         fmtUsd — shared number formatting
+src/storage/researchStorage.ts  in-memory + on-disk research state and resources,
+                            and the ResearchData / ResearchResource types
 ```
 
 ## How it fits together
@@ -69,15 +70,16 @@ state. Tools receive the shared `storage` instance — don't create a second one
 
 ## Adding or changing a tool
 
-Tools are registered with `server.tool(name, zodSchema, handler)` inside a
-`register*Tools(server, storage)` function. To add one:
+Tools are registered with `server.registerTool(name, { inputSchema }, handler)`
+inside a `register*Tools(server, storage)` function. To add one:
 
-1. Add the `server.tool(...)` call to the appropriate `register*Tools` function
-   in `src/tools/` (or a new file wired through `src/tools/index.ts`).
+1. Add the `server.registerTool(...)` call to the appropriate `register*Tools`
+   function in `src/tools/` (or a new file wired through `src/tools/index.ts`).
+   Do not use `server.tool()` — it is deprecated in the SDK.
 2. Define inputs with `zod` and `.describe()` every field — the descriptions are
    what the model sees, so make them precise.
 3. Return MCP content: `{ content: [{ type: "text", text: ... }] }`.
-4. Document the tool in `README.md` under **🛠️ Tools** — keep the format,
+4. Document the tool in `.github/README.md` under **🛠️ Tools** — keep the format,
    parameter list, and any API-key/rate-limit notes consistent with the
    existing entries.
 5. `npm run build` and confirm `tsc` is clean.
@@ -87,8 +89,9 @@ Tools are registered with `server.tool(name, zodSchema, handler)` inside a
 - **ESM import extensions are required.** Imports of local files use `.js`
   (e.g. `import ResearchStorage from "../storage/researchStorage.js"`) even
   though the source is `.ts`. This is `NodeNext` resolution — keep it.
-- **`strict: true`** is on (`noImplicitAny` is relaxed to `false`). New code
-  should still be typed; lean on the types in `src/types/`.
+- **`strict: true`** is on, with no relaxations — `noImplicitAny` included.
+  There is no `any` anywhere in `src/`; keep it that way. At a third-party JSON
+  boundary prefer `unknown` plus a cast at the use site over inventing a schema.
 - **External fetches can fail and that's expected.** Some sites return 403 to
   scrapers. Network calls in `searchUtils.ts` use a 15s timeout
   (`FETCH_CONTENT_TIMEOUT_MS`) and retry/backoff — preserve those guards; prefer

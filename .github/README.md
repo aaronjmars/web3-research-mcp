@@ -130,6 +130,16 @@ Parameters:
 - tokenTicker: Ticker symbol
 - source: Source to search (e.g., 'CoinGecko', 'DeFiLlama', 'News')
 
+### research-source
+
+Searches a specific source for a token and saves the top result's page content
+as a markdown resource.
+
+Parameters:
+- tokenName: Name of the token
+- tokenTicker: Ticker symbol of the token
+- source: Source to research (e.g., 'IQ Wiki', 'CoinMarketCap')
+
 ### coingecko-data
 
 Fetches live market data directly from the CoinGecko public API — price, market cap, 24h/7d/30d changes, ATH/ATL, circulating supply, contract addresses across chains, and social/dev links. Bypasses the 403 issues of HTML scraping.

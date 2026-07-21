@@ -1,8 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod/v3";
-import fetch from "node-fetch";
+import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
+import { fmtUsd } from "../utils/format.js";
 
 const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY;
 const COINGECKO_BASE = COINGECKO_API_KEY
@@ -48,7 +47,40 @@ interface CoinGeckoTickersResponse {
   tickers?: CoinGeckoTicker[];
 }
 
-async function cgFetch(path: string): Promise<any> {
+/**
+ * The subset of `/coins/{id}` that `formatMarketSummary` and its caller
+ * actually read. Every field is optional -- CoinGecko omits most of them for
+ * long-tail coins, and this type must not promise more than the code checks.
+ */
+interface CoinGeckoCoinDetail {
+  name?: string;
+  symbol?: string;
+  market_cap_rank?: number | null;
+  market_data?: {
+    current_price?: { usd?: number | null };
+    market_cap?: { usd?: number | null };
+    total_volume?: { usd?: number | null };
+    ath?: { usd?: number | null };
+    atl?: { usd?: number | null };
+    price_change_percentage_24h?: number | null;
+    price_change_percentage_7d?: number | null;
+    price_change_percentage_30d?: number | null;
+    circulating_supply?: number | null;
+    max_supply?: number | null;
+  };
+  platforms?: Record<string, string | null>;
+  links?: {
+    homepage?: string[];
+    twitter_screen_name?: string | null;
+    telegram_channel_identifier?: string | null;
+    repos_url?: { github?: string[] };
+    subreddit_url?: string | null;
+  };
+}
+
+// The shape of a third-party JSON body is genuinely unknowable here; each call
+// site narrows with an explicit cast to the interface it needs.
+async function cgFetch(path: string): Promise<unknown> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "User-Agent": "web3-research-mcp",
@@ -57,7 +89,8 @@ async function cgFetch(path: string): Promise<any> {
     headers["x-cg-pro-api-key"] = COINGECKO_API_KEY;
   }
 
-  // node-fetch v2 doesn't support AbortSignal.timeout(); use AbortController.
+  // AbortController rather than AbortSignal.timeout() so the AbortError can be
+  // distinguished and rewritten into an explicit timeout message below.
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), COINGECKO_TIMEOUT_MS);
 
@@ -65,10 +98,10 @@ async function cgFetch(path: string): Promise<any> {
   try {
     response = await fetch(`${COINGECKO_BASE}${path}`, {
       headers,
-      signal: controller.signal as any,
+      signal: controller.signal,
     });
-  } catch (err: any) {
-    if (err?.name === "AbortError") {
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
       throw new Error(
         `CoinGecko request timed out after ${COINGECKO_TIMEOUT_MS}ms`
       );
@@ -174,7 +207,16 @@ async function resolveCoinId(
   return null;
 }
 
-function formatMarketSummary(coin: any): string {
+/**
+ * Blockquote prepended to a summary when the resolver had to pick between
+ * several equally-matching coins. Empty string when the match was unambiguous.
+ */
+function ambiguityNote(resolved: ResolveCoinResult): string {
+  if (!resolved.ambiguous) return "";
+  return `> ⚠️ ${resolved.candidateCount} coins matched on ${resolved.matchedOn}; showing highest-rank match (\`${resolved.coin.id}\`). Use \`coingecko-search\` to disambiguate.\n\n`;
+}
+
+function formatMarketSummary(coin: CoinGeckoCoinDetail): string {
   const md = coin.market_data ?? {};
   const price = md.current_price?.usd;
   const mcap = md.market_cap?.usd;
@@ -267,11 +309,6 @@ function formatTickersSummary(
     0
   );
 
-  const fmtUsd = (n: number | null | undefined, digits = 0): string => {
-    if (n == null || !isFinite(n)) return "n/a";
-    return `$${n.toLocaleString("en-US", { maximumFractionDigits: digits })}`;
-  };
-
   const top = cleaned.slice(0, limit);
 
   const trustGlyph = (t: CoinGeckoTicker["trust_score"]): string => {
@@ -315,29 +352,17 @@ export function registerCoinGeckoTools(
   server: McpServer,
   storage: ResearchStorage
 ): void {
-  // The MCP SDK 1.9.0 is typed against zod v3; with zod v4 installed we build
-  // schemas via zod's v3 compatibility entrypoint ("zod/v3"). Register through a
-  // non-generic alias so the SDK's tool<Args extends ZodRawShape> overload does
-  // not trigger excessively deep type instantiation across the two zod copies.
-  const tool = server.tool.bind(server) as (
-    name: string,
-    paramsSchema: z.ZodRawShape,
-    cb: (args: any) => CallToolResult | Promise<CallToolResult>
-  ) => void;
-
-  tool(
+  server.registerTool(
     "coingecko-data",
     {
-      tokenName: z.string().describe("Full name of the token (e.g., 'Bitcoin')"),
-      tokenTicker: z.string().describe("Ticker symbol (e.g., 'BTC')"),
+      inputSchema: {
+        tokenName: z
+          .string()
+          .describe("Full name of the token (e.g., 'Bitcoin')"),
+        tokenTicker: z.string().describe("Ticker symbol (e.g., 'BTC')"),
+      },
     },
-    async ({
-      tokenName,
-      tokenTicker,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-    }) => {
+    async ({ tokenName, tokenTicker }) => {
       storage.addLogEntry(
         `Fetching CoinGecko data for ${tokenName} (${tokenTicker})`
       );
@@ -356,18 +381,16 @@ export function registerCoinGeckoTools(
           };
         }
 
-        const { coin: match, ambiguous, candidateCount, matchedOn } = resolved;
+        const { coin: match } = resolved;
 
-        const coin = await cgFetch(
+        const coin = (await cgFetch(
           `/coins/${encodeURIComponent(
             match.id
           )}?localization=false&tickers=false&market_data=true&community_data=true&developer_data=true&sparkline=false`
-        );
+        )) as CoinGeckoCoinDetail;
 
         const summary = formatMarketSummary(coin);
-        const ambiguityWarning = ambiguous
-          ? `> ⚠️ ${candidateCount} coins matched on ${matchedOn}; showing highest-rank match (\`${match.id}\`). Use \`coingecko-search\` to disambiguate.\n\n`
-          : "";
+        const ambiguityWarning = ambiguityNote(resolved);
         const resourceId = `coingecko_${match.id}_${new Date().getTime()}`;
 
         storage.addToSection("resources", {
@@ -417,16 +440,18 @@ export function registerCoinGeckoTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "coingecko-search",
     {
-      query: z
-        .string()
-        .describe(
-          "Search query — name, ticker, or contract address. Returns candidate CoinGecko IDs."
-        ),
+      inputSchema: {
+        query: z
+          .string()
+          .describe(
+            "Search query — name, ticker, or contract address. Returns candidate CoinGecko IDs."
+          ),
+      },
     },
-    async ({ query }: { query: string }) => {
+    async ({ query }) => {
       storage.addLogEntry(`CoinGecko search: "${query}"`);
 
       try {
@@ -479,28 +504,24 @@ export function registerCoinGeckoTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "coingecko-tickers",
     {
-      tokenName: z.string().describe("Full name of the token (e.g., 'Bitcoin')"),
-      tokenTicker: z.string().describe("Ticker symbol (e.g., 'BTC')"),
-      limit: z
-        .number()
-        .int()
-        .min(1)
-        .max(50)
-        .default(15)
-        .describe("How many top venues to return (sorted by 24h USD volume)"),
+      inputSchema: {
+        tokenName: z
+          .string()
+          .describe("Full name of the token (e.g., 'Bitcoin')"),
+        tokenTicker: z.string().describe("Ticker symbol (e.g., 'BTC')"),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .default(15)
+          .describe("How many top venues to return (sorted by 24h USD volume)"),
+      },
     },
-    async ({
-      tokenName,
-      tokenTicker,
-      limit,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-      limit: number;
-    }) => {
+    async ({ tokenName, tokenTicker, limit }) => {
       storage.addLogEntry(
         `Fetching CoinGecko tickers for ${tokenName} (${tokenTicker})`
       );
@@ -519,7 +540,7 @@ export function registerCoinGeckoTools(
           };
         }
 
-        const { coin: match, ambiguous, candidateCount, matchedOn } = resolved;
+        const { coin: match } = resolved;
 
         const data = (await cgFetch(
           `/coins/${encodeURIComponent(
@@ -534,9 +555,7 @@ export function registerCoinGeckoTools(
           tickers,
           limit
         );
-        const ambiguityWarning = ambiguous
-          ? `> ⚠️ ${candidateCount} coins matched on ${matchedOn}; showing highest-rank match (\`${match.id}\`). Use \`coingecko-search\` to disambiguate.\n\n`
-          : "";
+        const ambiguityWarning = ambiguityNote(resolved);
         const resourceId = `coingecko_tickers_${match.id}_${new Date().getTime()}`;
 
         storage.addToSection("resources", {

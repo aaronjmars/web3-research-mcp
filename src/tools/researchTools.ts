@@ -1,16 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod/v3";
+import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
 import {
   performSearch,
   fetchContent,
-  searchMultipleSources,
   searchSource,
   sleep,
 } from "../utils/searchUtils.js";
 
-export async function getResourceContent(
+async function getResourceContent(
   url: string,
   storage: ResearchStorage
 ): Promise<string> {
@@ -32,30 +30,22 @@ export function registerResearchTools(
   server: McpServer,
   storage: ResearchStorage
 ): void {
-  // The MCP SDK 1.9.0 is typed against zod v3; with zod v4 installed we build
-  // schemas via zod's v3 compatibility entrypoint ("zod/v3"). Register through a
-  // non-generic alias so the SDK's tool<Args extends ZodRawShape> overload does
-  // not trigger excessively deep type instantiation across the two zod copies.
-  const tool = server.tool.bind(server) as (
-    name: string,
-    paramsSchema: z.ZodRawShape,
-    cb: (args: any) => CallToolResult | Promise<CallToolResult>
-  ) => void;
-
-  tool(
+  server.registerTool(
     "search",
     {
-      query: z.string().describe("Search query"),
-      searchType: z
-        .enum(["web", "news", "images", "videos"])
-        .default("web")
-        .describe("Type of search"),
+      inputSchema: {
+        query: z.string().describe("Search query"),
+        searchType: z
+          .enum(["web", "news", "images", "videos"])
+          .default("web")
+          .describe("Type of search"),
+      },
     },
-    async ({ query, searchType }: { query: string; searchType: string }) => {
+    async ({ query, searchType }) => {
       storage.addLogEntry(`Performing ${searchType} search for: "${query}"`);
 
       try {
-        const results = await performSearch(query, searchType as any);
+        const results = await performSearch(query, searchType);
 
         storage.addToSection("searchResults", {
           [searchType]: {
@@ -90,19 +80,15 @@ export function registerResearchTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "create-research-plan",
     {
-      tokenName: z.string().describe("Token name"),
-      tokenTicker: z.string().describe("Token ticker symbol"),
+      inputSchema: {
+        tokenName: z.string().describe("Token name"),
+        tokenTicker: z.string().describe("Token ticker symbol"),
+      },
     },
-    async ({
-      tokenName,
-      tokenTicker,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-    }) => {
+    async ({ tokenName, tokenTicker }) => {
       storage.addLogEntry(
         `Creating research plan for ${tokenName} (${tokenTicker})`
       );
@@ -177,28 +163,22 @@ export function registerResearchTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "research-with-keywords",
     {
-      tokenName: z.string().describe("Name of the token"),
-      tokenTicker: z.string().describe("Ticker symbol of the token"),
-      keywords: z.array(z.string()).describe("Keywords to search for"),
+      inputSchema: {
+        tokenName: z.string().describe("Name of the token"),
+        tokenTicker: z.string().describe("Ticker symbol of the token"),
+        keywords: z.array(z.string()).describe("Keywords to search for"),
+      },
     },
-    async ({
-      tokenName,
-      tokenTicker,
-      keywords,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-      keywords: string[];
-    }) => {
+    async ({ tokenName, tokenTicker, keywords }) => {
       storage.addLogEntry(
         `Researching ${tokenName} with keywords: ${keywords.join(", ")}`
       );
 
       try {
-        const results: Record<string, any> = {};
+        const results: Record<string, unknown> = {};
 
         for (const keyword of keywords) {
           const query = `${tokenName} ${tokenTicker} ${keyword}`;
@@ -262,25 +242,21 @@ export function registerResearchTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "update-status",
     {
-      section: z
-        .string()
-        .describe(
-          "Section name to update (e.g., 'projectInfo', 'technicalFundamentals')"
-        ),
-      status: z
-        .enum(["planned", "in_progress", "completed"])
-        .describe("New status for the section"),
+      inputSchema: {
+        section: z
+          .string()
+          .describe(
+            "Section name to update (e.g., 'projectInfo', 'technicalFundamentals')"
+          ),
+        status: z
+          .enum(["planned", "in_progress", "completed"])
+          .describe("New status for the section"),
+      },
     },
-    async ({
-      section,
-      status,
-    }: {
-      section: string;
-      status: "planned" | "in_progress" | "completed";
-    }) => {
+    async ({ section, status }) => {
       try {
         const researchPlan = storage.getSection("researchPlan");
         if (!researchPlan || !researchPlan[section]) {
@@ -330,24 +306,20 @@ export function registerResearchTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "fetch-content",
     {
-      url: z
-        .string()
-        .describe("URL to fetch content from (can be a resource:// URL)"),
-      format: z
-        .enum(["text", "html", "markdown", "json"])
-        .default("markdown")
-        .describe("Output format"),
+      inputSchema: {
+        url: z
+          .string()
+          .describe("URL to fetch content from (can be a resource:// URL)"),
+        format: z
+          .enum(["text", "html", "markdown", "json"])
+          .default("markdown")
+          .describe("Output format"),
+      },
     },
-    async ({
-      url,
-      format,
-    }: {
-      url: string;
-      format: "text" | "html" | "markdown" | "json";
-    }) => {
+    async ({ url, format }) => {
       storage.addLogEntry(`Fetching content from: ${url} (format: ${format})`);
 
       try {
@@ -408,24 +380,18 @@ export function registerResearchTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "search-source",
     {
-      tokenName: z.string().describe("Name of the token"),
-      tokenTicker: z.string().describe("Ticker symbol of the token"),
-      source: z
-        .string()
-        .describe("Source to search (e.g., 'Dune', 'IQ Wiki', 'News')"),
+      inputSchema: {
+        tokenName: z.string().describe("Name of the token"),
+        tokenTicker: z.string().describe("Ticker symbol of the token"),
+        source: z
+          .string()
+          .describe("Source to search (e.g., 'Dune', 'IQ Wiki', 'News')"),
+      },
     },
-    async ({
-      tokenName,
-      tokenTicker,
-      source,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-      source: string;
-    }) => {
+    async ({ tokenName, tokenTicker, source }) => {
       storage.addLogEntry(
         `Searching ${source} for ${tokenName} (${tokenTicker})`
       );
@@ -495,7 +461,7 @@ export function registerResearchTools(
     }
   );
 
-  tool("list-resources", {}, async () => {
+  server.registerTool("list-resources", { inputSchema: {} }, async () => {
     try {
       const resources = storage.getAllResources();
       const resourceList = Object.keys(resources).map((id) => ({
@@ -532,143 +498,18 @@ export function registerResearchTools(
     }
   });
 
-  tool(
+  server.registerTool(
     "research-source",
     {
-      tokenName: z.string().describe("Name of the token"),
-      tokenTicker: z.string().describe("Ticker symbol of the token"),
-      source: z.string().describe("Single source to research"),
+      inputSchema: {
+        tokenName: z.string().describe("Name of the token"),
+        tokenTicker: z.string().describe("Ticker symbol of the token"),
+        source: z
+          .string()
+          .describe("Source to research (e.g., 'IQ Wiki', 'CoinMarketCap')"),
+      },
     },
-    async ({
-      tokenName,
-      tokenTicker,
-      source,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-      source: string;
-    }) => {
-      storage.addLogEntry(
-        `Researching source: ${source} for ${tokenName} (${tokenTicker})`
-      );
-
-      try {
-        const query = `${tokenName} ${tokenTicker} ${source}`;
-
-        const results = await performSearch(query, "web");
-
-        if (!results.results || results.results.length === 0) {
-          storage.addLogEntry(`No results found for ${source}`);
-          return {
-            content: [
-              {
-                type: "text",
-                text: `No results found for ${source}`,
-              },
-            ],
-          };
-        }
-
-        const topResults = results.results.slice(0, 3);
-        storage.addToSection("searchResults", { [source]: topResults });
-
-        if (topResults[0] && topResults[0].url) {
-          try {
-            const url = topResults[0].url;
-            storage.addLogEntry(`Fetching content from ${url}`);
-            const content = await fetchContent(url, "markdown");
-
-            const resourceId = `${source.toLowerCase()}_${tokenName.toLowerCase()}_${new Date().getTime()}`;
-
-            storage.addToSection("resources", {
-              [resourceId]: {
-                url,
-                format: "markdown",
-                content,
-                title: topResults[0].title,
-                source,
-                fetchedAt: new Date().toISOString(),
-              },
-            });
-
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Researched ${source} for ${tokenName} (${tokenTicker}).\n\nTop result: ${
-                    topResults[0].title
-                  }\n\nContent saved as resource: research://resource/${resourceId}\n\nAll search results:\n${JSON.stringify(
-                    topResults,
-                    null,
-                    2
-                  )}`,
-                },
-              ],
-            };
-          } catch (error) {
-            storage.addLogEntry(
-              `Error fetching content from ${topResults[0].url}: ${error}`
-            );
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Found search results for ${source}, but couldn't fetch content: ${error}\n\nSearch results:\n${JSON.stringify(
-                    topResults,
-                    null,
-                    2
-                  )}`,
-                },
-              ],
-            };
-          }
-        }
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Search results for ${source}:\n\n${JSON.stringify(
-                topResults,
-                null,
-                2
-              )}`,
-            },
-          ],
-        };
-      } catch (error) {
-        storage.addLogEntry(`Error researching ${source}: ${error}`);
-        return {
-          isError: true,
-          content: [
-            {
-              type: "text",
-              text: `Error researching ${source}: ${error}`,
-            },
-          ],
-        };
-      }
-    }
-  );
-
-  tool(
-    "research-token",
-    {
-      tokenName: z.string().describe("Name of the token"),
-      tokenTicker: z.string().describe("Ticker symbol of the token"),
-      source: z
-        .string()
-        .describe("Source to research (e.g., 'IQ Wiki', 'CoinMarketCap')"),
-    },
-    async ({
-      tokenName,
-      tokenTicker,
-      source,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-      source: string;
-    }) => {
+    async ({ tokenName, tokenTicker, source }) => {
       storage.addLogEntry(
         `Researching source: ${source} for ${tokenName} (${tokenTicker})`
       );

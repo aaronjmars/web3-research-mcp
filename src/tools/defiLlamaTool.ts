@@ -1,8 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod/v3";
-import fetch from "node-fetch";
+import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
+import { fmtUsd } from "../utils/format.js";
 
 const DEFILLAMA_BASE = "https://api.llama.fi";
 const DEFILLAMA_TIMEOUT_MS = 15000;
@@ -78,13 +77,16 @@ interface TvlHistorySummary {
 let protocolsCache: { data: DLProtocolListEntry[]; fetchedAt: number } | null =
   null;
 
-async function dlFetch(path: string): Promise<any> {
+// The shape of a third-party JSON body is genuinely unknowable here; each call
+// site narrows with an explicit cast to the interface it needs.
+async function dlFetch(path: string): Promise<unknown> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "User-Agent": "web3-research-mcp",
   };
 
-  // node-fetch v2 doesn't support AbortSignal.timeout(); use AbortController.
+  // AbortController rather than AbortSignal.timeout() so the AbortError can be
+  // distinguished and rewritten into an explicit timeout message below.
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFILLAMA_TIMEOUT_MS);
 
@@ -92,10 +94,10 @@ async function dlFetch(path: string): Promise<any> {
   try {
     response = await fetch(`${DEFILLAMA_BASE}${path}`, {
       headers,
-      signal: controller.signal as any,
+      signal: controller.signal,
     });
-  } catch (err: any) {
-    if (err?.name === "AbortError") {
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
       throw new Error(
         `DeFiLlama request timed out after ${DEFILLAMA_TIMEOUT_MS}ms`
       );
@@ -301,15 +303,14 @@ async function fetchFees(slug: string): Promise<DLFeesSummary | null> {
     return (await dlFetch(
       `/summary/fees/${encodeURIComponent(slug)}?dataType=dailyFees`
     )) as DLFeesSummary;
-  } catch {
+  } catch (error) {
+    // A 404 here is normal -- most protocols have no fee data. Anything else
+    // (rate limit, timeout) also lands as "n/a" downstream, so log it rather
+    // than let a failed call read as an authoritative absence of fees.
+    console.error(`DeFiLlama fees lookup failed for "${slug}": ${error}`);
     return null;
   }
 }
-
-const fmtUsd = (n: number | null | undefined, digits = 0): string => {
-  if (n == null || !isFinite(n)) return "n/a";
-  return `$${n.toLocaleString("en-US", { maximumFractionDigits: digits })}`;
-};
 
 const fmtPct = (n: number | null | undefined): string => {
   if (n == null || !isFinite(n)) return "n/a";
@@ -317,9 +318,7 @@ const fmtPct = (n: number | null | undefined): string => {
 };
 
 function parseAddresses(detail: DLProtocolDetail): string[] {
-  // DeFiLlama uses two formats:
-  // - top-level `address`: "ethereum:0xabc..." (single canonical address)
-  // - `currentChainTvls`: keys like "Ethereum", "Arbitrum-borrowed" (chains used)
+  // DeFiLlama's top-level `address` is chain-prefixed, e.g. "ethereum:0xabc...".
   const lines: string[] = [];
   if (detail.address && typeof detail.address === "string") {
     lines.push(`  - ${detail.address}`);
@@ -448,31 +447,17 @@ export function registerDeFiLlamaTools(
   server: McpServer,
   storage: ResearchStorage
 ): void {
-  // The MCP SDK 1.9.0 is typed against zod v3; with zod v4 installed we build
-  // schemas via zod's v3 compatibility entrypoint ("zod/v3"). Register through a
-  // non-generic alias so the SDK's tool<Args extends ZodRawShape> overload does
-  // not trigger excessively deep type instantiation across the two zod copies.
-  const tool = server.tool.bind(server) as (
-    name: string,
-    paramsSchema: z.ZodRawShape,
-    cb: (args: any) => CallToolResult | Promise<CallToolResult>
-  ) => void;
-
-  tool(
+  server.registerTool(
     "defillama-data",
     {
-      tokenName: z
-        .string()
-        .describe("Full protocol/token name (e.g., 'Uniswap')"),
-      tokenTicker: z.string().describe("Ticker symbol (e.g., 'UNI')"),
+      inputSchema: {
+        tokenName: z
+          .string()
+          .describe("Full protocol/token name (e.g., 'Uniswap')"),
+        tokenTicker: z.string().describe("Ticker symbol (e.g., 'UNI')"),
+      },
     },
-    async ({
-      tokenName,
-      tokenTicker,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-    }) => {
+    async ({ tokenName, tokenTicker }) => {
       storage.addLogEntry(
         `Fetching DeFiLlama data for ${tokenName} (${tokenTicker})`
       );
@@ -574,16 +559,18 @@ export function registerDeFiLlamaTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "defillama-search",
     {
-      query: z
-        .string()
-        .describe(
-          "Search query — protocol name, ticker, or slug. Returns candidate DeFiLlama protocols with their slugs."
-        ),
+      inputSchema: {
+        query: z
+          .string()
+          .describe(
+            "Search query — protocol name, ticker, or slug. Returns candidate DeFiLlama protocols with their slugs."
+          ),
+      },
     },
-    async ({ query }: { query: string }) => {
+    async ({ query }) => {
       storage.addLogEntry(`DeFiLlama search: "${query}"`);
 
       try {

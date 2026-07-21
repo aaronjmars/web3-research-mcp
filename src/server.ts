@@ -3,8 +3,7 @@ import {
   ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { GetPromptResult } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod/v3";
+import { z } from "zod";
 
 import ResearchStorage from "./storage/researchStorage.js";
 import { registerAllTools } from "./tools/index.js";
@@ -13,16 +12,8 @@ const storage = new ResearchStorage("./research_data");
 
 const server = new McpServer({
   name: "web3-research-mcp",
-  version: "1.0.1",
+  version: "1.0.4",
 });
-
-// The MCP SDK 1.9.0 is typed against zod v3; register the prompt through a
-// non-generic alias to avoid excessively deep type instantiation (see tools).
-const prompt = server.prompt.bind(server) as (
-  name: string,
-  argsSchema: z.ZodRawShape,
-  cb: (args: any) => GetPromptResult | Promise<GetPromptResult>
-) => void;
 
 server.resource("research-status", "research://status", async (uri) => ({
   contents: [
@@ -104,15 +95,7 @@ server.resource(
     const resource = storage.getResource(id);
 
     if (!resource) {
-      return {
-        contents: [
-          {
-            uri: uri.href,
-            text: `Resource not found: ${id}`,
-            mimeType: "text/plain",
-          },
-        ],
-      };
+      throw new Error(`Resource not found: ${id}`);
     }
 
     let mimeType = "text/plain";
@@ -142,15 +125,19 @@ server.resource(
   }
 );
 
-prompt(
+server.registerPrompt(
   "token-research",
   {
-    tokenName: z.string().describe("The full name of the cryptocurrency token"),
-    tokenTicker: z
-      .string()
-      .describe("The ticker symbol of the token (e.g., BTC, ETH)"),
+    argsSchema: {
+      tokenName: z
+        .string()
+        .describe("The full name of the cryptocurrency token"),
+      tokenTicker: z
+        .string()
+        .describe("The ticker symbol of the token (e.g., BTC, ETH)"),
+    },
   },
-  ({ tokenName, tokenTicker }: { tokenName: string; tokenTicker: string }) => {
+  ({ tokenName, tokenTicker }) => {
     storage.startNewResearch(tokenName, tokenTicker);
 
     return {
@@ -196,9 +183,7 @@ For each section, explain what you discovered, what remains uncertain, and what 
 registerAllTools(server, storage);
 
 const transport = new StdioServerTransport();
-server
-  .connect(transport)
-  .then(() => {})
-  .catch((error) => {
-    console.error("Failed to start server:", error);
-  });
+server.connect(transport).catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+});
