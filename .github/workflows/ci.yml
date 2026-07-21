@@ -37,4 +37,6 @@ jobs:
         run: node --check bin/cli.js
 
       - name: Smoke test CLI
-        run: node bin/cli.js --help
+        run: |
+          node bin/cli.js --help | grep -q "Usage: web3-research-mcp"
+          test "$(node bin/cli.js --version)" = "$(node -p "require('./package.json').version")"
