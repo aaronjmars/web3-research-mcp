@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
+import { fmtUsd } from "../utils/format.js";
 
 const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY;
 const COINGECKO_BASE = COINGECKO_API_KEY
@@ -173,6 +174,15 @@ async function resolveCoinId(
   return null;
 }
 
+/**
+ * Blockquote prepended to a summary when the resolver had to pick between
+ * several equally-matching coins. Empty string when the match was unambiguous.
+ */
+function ambiguityNote(resolved: ResolveCoinResult): string {
+  if (!resolved.ambiguous) return "";
+  return `> ⚠️ ${resolved.candidateCount} coins matched on ${resolved.matchedOn}; showing highest-rank match (\`${resolved.coin.id}\`). Use \`coingecko-search\` to disambiguate.\n\n`;
+}
+
 function formatMarketSummary(coin: any): string {
   const md = coin.market_data ?? {};
   const price = md.current_price?.usd;
@@ -266,11 +276,6 @@ function formatTickersSummary(
     0
   );
 
-  const fmtUsd = (n: number | null | undefined, digits = 0): string => {
-    if (n == null || !isFinite(n)) return "n/a";
-    return `$${n.toLocaleString("en-US", { maximumFractionDigits: digits })}`;
-  };
-
   const top = cleaned.slice(0, limit);
 
   const trustGlyph = (t: CoinGeckoTicker["trust_score"]): string => {
@@ -343,7 +348,7 @@ export function registerCoinGeckoTools(
           };
         }
 
-        const { coin: match, ambiguous, candidateCount, matchedOn } = resolved;
+        const { coin: match } = resolved;
 
         const coin = await cgFetch(
           `/coins/${encodeURIComponent(
@@ -352,9 +357,7 @@ export function registerCoinGeckoTools(
         );
 
         const summary = formatMarketSummary(coin);
-        const ambiguityWarning = ambiguous
-          ? `> ⚠️ ${candidateCount} coins matched on ${matchedOn}; showing highest-rank match (\`${match.id}\`). Use \`coingecko-search\` to disambiguate.\n\n`
-          : "";
+        const ambiguityWarning = ambiguityNote(resolved);
         const resourceId = `coingecko_${match.id}_${new Date().getTime()}`;
 
         storage.addToSection("resources", {
@@ -504,7 +507,7 @@ export function registerCoinGeckoTools(
           };
         }
 
-        const { coin: match, ambiguous, candidateCount, matchedOn } = resolved;
+        const { coin: match } = resolved;
 
         const data = (await cgFetch(
           `/coins/${encodeURIComponent(
@@ -519,9 +522,7 @@ export function registerCoinGeckoTools(
           tickers,
           limit
         );
-        const ambiguityWarning = ambiguous
-          ? `> ⚠️ ${candidateCount} coins matched on ${matchedOn}; showing highest-rank match (\`${match.id}\`). Use \`coingecko-search\` to disambiguate.\n\n`
-          : "";
+        const ambiguityWarning = ambiguityNote(resolved);
         const resourceId = `coingecko_tickers_${match.id}_${new Date().getTime()}`;
 
         storage.addToSection("resources", {

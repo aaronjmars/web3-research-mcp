@@ -39,6 +39,30 @@ export interface ResearchData {
   logs: ResearchLog[];
 }
 
+/** A fresh, fully-zeroed ResearchData record. */
+function emptyResearch(
+  tokenName: string,
+  tokenTicker: string,
+  status: ResearchData["status"]
+): ResearchData {
+  return {
+    tokenName,
+    tokenTicker,
+    researchPlan: {},
+    searchResults: {},
+    technicalData: {},
+    marketData: {},
+    socialData: {},
+    newsData: [],
+    teamData: {},
+    relatedTokens: [],
+    resources: {},
+    researchData: {},
+    status,
+    logs: [],
+  };
+}
+
 export class ResearchStorage {
   private dataDir: string;
   private currentResearch: ResearchData;
@@ -47,22 +71,7 @@ export class ResearchStorage {
     this.dataDir = dataDir;
     this.ensureDataDir();
 
-    this.currentResearch = {
-      tokenName: "",
-      tokenTicker: "",
-      researchPlan: {},
-      searchResults: {},
-      technicalData: {},
-      marketData: {},
-      socialData: {},
-      newsData: [],
-      teamData: {},
-      relatedTokens: [],
-      resources: {},
-      researchData: {},
-      status: "not_started",
-      logs: [],
-    };
+    this.currentResearch = emptyResearch("", "", "not_started");
   }
 
   private async ensureDataDir(): Promise<void> {
@@ -78,22 +87,7 @@ export class ResearchStorage {
       this.saveCurrentResearch();
     }
 
-    this.currentResearch = {
-      tokenName,
-      tokenTicker,
-      researchPlan: {},
-      searchResults: {},
-      technicalData: {},
-      marketData: {},
-      socialData: {},
-      newsData: [],
-      teamData: {},
-      relatedTokens: [],
-      resources: {},
-      researchData: {},
-      status: "in_progress",
-      logs: [],
-    };
+    this.currentResearch = emptyResearch(tokenName, tokenTicker, "in_progress");
 
     this.addLogEntry(`Started research on ${tokenName} (${tokenTicker})`);
   }

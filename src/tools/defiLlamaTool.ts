@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
+import { fmtUsd } from "../utils/format.js";
 
 const DEFILLAMA_BASE = "https://api.llama.fi";
 const DEFILLAMA_TIMEOUT_MS = 15000;
@@ -308,11 +309,6 @@ async function fetchFees(slug: string): Promise<DLFeesSummary | null> {
     return null;
   }
 }
-
-const fmtUsd = (n: number | null | undefined, digits = 0): string => {
-  if (n == null || !isFinite(n)) return "n/a";
-  return `$${n.toLocaleString("en-US", { maximumFractionDigits: digits })}`;
-};
 
 const fmtPct = (n: number | null | undefined): string => {
   if (n == null || !isFinite(n)) return "n/a";
