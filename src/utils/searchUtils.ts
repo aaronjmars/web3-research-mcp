@@ -1,53 +1,54 @@
-import * as DDG from "duck-duck-scrape";
+import {
+  search,
+  searchNews,
+  searchImages,
+  searchVideos,
+  SafeSearchType,
+  type SearchResults,
+  type NewsSearchResults,
+  type ImageSearchResults,
+  type VideoSearchResults,
+} from "duck-duck-scrape";
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
 
 const FETCH_CONTENT_TIMEOUT_MS = 15000;
+
+export type SearchType = "web" | "news" | "images" | "videos";
+export type ContentFormat = "text" | "html" | "markdown" | "json";
+
+export type DdgSearchResults =
+  | SearchResults
+  | NewsSearchResults
+  | ImageSearchResults
+  | VideoSearchResults;
 
 export const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function performSearch(
   query: string,
-  type: "web" | "news" | "images" | "videos" = "web",
+  type: SearchType = "web",
   retries = 2
-): Promise<any> {
+): Promise<DdgSearchResults> {
   try {
     await sleep(3000);
 
-    let results;
+    const options = { safeSearch: SafeSearchType.MODERATE };
+
+    let results: DdgSearchResults;
     switch (type) {
       case "news":
-        if (typeof DDG.news !== "function") {
-          results = await DDG.search(`${query} news`, {
-            safeSearch: DDG.SafeSearchType.MODERATE,
-          });
-        } else {
-          results = await DDG.news(query);
-        }
+        results = await searchNews(query, options);
         break;
       case "images":
-        if (typeof DDG.images !== "function") {
-          results = await DDG.search(`${query} images`, {
-            safeSearch: DDG.SafeSearchType.MODERATE,
-          });
-        } else {
-          results = await DDG.images(query);
-        }
+        results = await searchImages(query, options);
         break;
       case "videos":
-        if (typeof DDG.videos !== "function") {
-          results = await DDG.search(`${query} videos`, {
-            safeSearch: DDG.SafeSearchType.MODERATE,
-          });
-        } else {
-          results = await DDG.videos(query);
-        }
+        results = await searchVideos(query, options);
         break;
       default:
-        results = await DDG.search(query, {
-          safeSearch: DDG.SafeSearchType.MODERATE,
-        });
+        results = await search(query, options);
     }
 
     return results;
@@ -62,7 +63,7 @@ export async function performSearch(
 
 export async function fetchContent(
   url: string,
-  format: "text" | "html" | "markdown" | "json" = "text",
+  format: ContentFormat = "text",
   retries = 2
 ): Promise<string> {
   if (url.startsWith("research://")) {
@@ -157,14 +158,12 @@ export async function fetchContent(
   throw new Error(`Failed to fetch ${url} after ${retries} retries`);
 }
 
-/**
- * Get search results for a specific source - completely open approach with additional search terms
- */
+/** Expands a source key into extra query terms; "news" routes to DDG news search. */
 export async function searchSource(
   tokenName: string,
   tokenTicker: string,
   source: string
-): Promise<any> {
+): Promise<DdgSearchResults> {
   const extraTerms = ["crypto", "token"];
 
   switch (source.toLowerCase()) {
@@ -189,9 +188,6 @@ export async function searchSource(
     case "dune":
       extraTerms.push("dashboard", "crypto", "stats");
       break;
-    case "airdrop":
-      break;
-    default:
   }
 
   const query = `${tokenName} ${tokenTicker} ${source} ${extraTerms.join(" ")}`;
