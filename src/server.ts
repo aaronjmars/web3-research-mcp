@@ -3,7 +3,6 @@ import {
   ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import type { GetPromptResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
 import ResearchStorage from "./storage/researchStorage.js";
@@ -15,14 +14,6 @@ const server = new McpServer({
   name: "web3-research-mcp",
   version: "1.0.1",
 });
-
-// The MCP SDK 1.9.0 is typed against zod v3; register the prompt through a
-// non-generic alias to avoid excessively deep type instantiation (see tools).
-const prompt = server.prompt.bind(server) as (
-  name: string,
-  argsSchema: z.ZodRawShape,
-  cb: (args: any) => GetPromptResult | Promise<GetPromptResult>
-) => void;
 
 server.resource("research-status", "research://status", async (uri) => ({
   contents: [
@@ -142,15 +133,19 @@ server.resource(
   }
 );
 
-prompt(
+server.registerPrompt(
   "token-research",
   {
-    tokenName: z.string().describe("The full name of the cryptocurrency token"),
-    tokenTicker: z
-      .string()
-      .describe("The ticker symbol of the token (e.g., BTC, ETH)"),
+    argsSchema: {
+      tokenName: z
+        .string()
+        .describe("The full name of the cryptocurrency token"),
+      tokenTicker: z
+        .string()
+        .describe("The ticker symbol of the token (e.g., BTC, ETH)"),
+    },
   },
-  ({ tokenName, tokenTicker }: { tokenName: string; tokenTicker: string }) => {
+  ({ tokenName, tokenTicker }) => {
     storage.startNewResearch(tokenName, tokenTicker);
 
     return {

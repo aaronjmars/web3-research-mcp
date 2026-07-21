@@ -1,5 +1,4 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
 
@@ -315,29 +314,17 @@ export function registerCoinGeckoTools(
   server: McpServer,
   storage: ResearchStorage
 ): void {
-  // The MCP SDK 1.9.0 is typed against zod v3; with zod v4 installed we build
-  // schemas via zod's v3 compatibility entrypoint ("zod/v3"). Register through a
-  // non-generic alias so the SDK's tool<Args extends ZodRawShape> overload does
-  // not trigger excessively deep type instantiation across the two zod copies.
-  const tool = server.tool.bind(server) as (
-    name: string,
-    paramsSchema: z.ZodRawShape,
-    cb: (args: any) => CallToolResult | Promise<CallToolResult>
-  ) => void;
-
-  tool(
+  server.registerTool(
     "coingecko-data",
     {
-      tokenName: z.string().describe("Full name of the token (e.g., 'Bitcoin')"),
-      tokenTicker: z.string().describe("Ticker symbol (e.g., 'BTC')"),
+      inputSchema: {
+        tokenName: z
+          .string()
+          .describe("Full name of the token (e.g., 'Bitcoin')"),
+        tokenTicker: z.string().describe("Ticker symbol (e.g., 'BTC')"),
+      },
     },
-    async ({
-      tokenName,
-      tokenTicker,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-    }) => {
+    async ({ tokenName, tokenTicker }) => {
       storage.addLogEntry(
         `Fetching CoinGecko data for ${tokenName} (${tokenTicker})`
       );
@@ -417,16 +404,18 @@ export function registerCoinGeckoTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "coingecko-search",
     {
-      query: z
-        .string()
-        .describe(
-          "Search query — name, ticker, or contract address. Returns candidate CoinGecko IDs."
-        ),
+      inputSchema: {
+        query: z
+          .string()
+          .describe(
+            "Search query — name, ticker, or contract address. Returns candidate CoinGecko IDs."
+          ),
+      },
     },
-    async ({ query }: { query: string }) => {
+    async ({ query }) => {
       storage.addLogEntry(`CoinGecko search: "${query}"`);
 
       try {
@@ -479,28 +468,24 @@ export function registerCoinGeckoTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "coingecko-tickers",
     {
-      tokenName: z.string().describe("Full name of the token (e.g., 'Bitcoin')"),
-      tokenTicker: z.string().describe("Ticker symbol (e.g., 'BTC')"),
-      limit: z
-        .number()
-        .int()
-        .min(1)
-        .max(50)
-        .default(15)
-        .describe("How many top venues to return (sorted by 24h USD volume)"),
+      inputSchema: {
+        tokenName: z
+          .string()
+          .describe("Full name of the token (e.g., 'Bitcoin')"),
+        tokenTicker: z.string().describe("Ticker symbol (e.g., 'BTC')"),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .default(15)
+          .describe("How many top venues to return (sorted by 24h USD volume)"),
+      },
     },
-    async ({
-      tokenName,
-      tokenTicker,
-      limit,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-      limit: number;
-    }) => {
+    async ({ tokenName, tokenTicker, limit }) => {
       storage.addLogEntry(
         `Fetching CoinGecko tickers for ${tokenName} (${tokenTicker})`
       );

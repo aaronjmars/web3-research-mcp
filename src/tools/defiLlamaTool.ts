@@ -1,5 +1,4 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
 
@@ -448,31 +447,17 @@ export function registerDeFiLlamaTools(
   server: McpServer,
   storage: ResearchStorage
 ): void {
-  // The MCP SDK 1.9.0 is typed against zod v3; with zod v4 installed we build
-  // schemas via zod's v3 compatibility entrypoint ("zod/v3"). Register through a
-  // non-generic alias so the SDK's tool<Args extends ZodRawShape> overload does
-  // not trigger excessively deep type instantiation across the two zod copies.
-  const tool = server.tool.bind(server) as (
-    name: string,
-    paramsSchema: z.ZodRawShape,
-    cb: (args: any) => CallToolResult | Promise<CallToolResult>
-  ) => void;
-
-  tool(
+  server.registerTool(
     "defillama-data",
     {
-      tokenName: z
-        .string()
-        .describe("Full protocol/token name (e.g., 'Uniswap')"),
-      tokenTicker: z.string().describe("Ticker symbol (e.g., 'UNI')"),
+      inputSchema: {
+        tokenName: z
+          .string()
+          .describe("Full protocol/token name (e.g., 'Uniswap')"),
+        tokenTicker: z.string().describe("Ticker symbol (e.g., 'UNI')"),
+      },
     },
-    async ({
-      tokenName,
-      tokenTicker,
-    }: {
-      tokenName: string;
-      tokenTicker: string;
-    }) => {
+    async ({ tokenName, tokenTicker }) => {
       storage.addLogEntry(
         `Fetching DeFiLlama data for ${tokenName} (${tokenTicker})`
       );
@@ -574,16 +559,18 @@ export function registerDeFiLlamaTools(
     }
   );
 
-  tool(
+  server.registerTool(
     "defillama-search",
     {
-      query: z
-        .string()
-        .describe(
-          "Search query — protocol name, ticker, or slug. Returns candidate DeFiLlama protocols with their slugs."
-        ),
+      inputSchema: {
+        query: z
+          .string()
+          .describe(
+            "Search query — protocol name, ticker, or slug. Returns candidate DeFiLlama protocols with their slugs."
+          ),
+      },
     },
-    async ({ query }: { query: string }) => {
+    async ({ query }) => {
       storage.addLogEntry(`DeFiLlama search: "${query}"`);
 
       try {
