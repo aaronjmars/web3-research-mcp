@@ -1,11 +1,13 @@
 import {
   search,
   searchNews,
-  searchImages,
-  searchVideos,
   SafeSearchType,
   type SearchResults,
   type NewsSearchResults,
+} from "ddg-kit";
+import {
+  searchImages,
+  searchVideos,
   type ImageSearchResults,
   type VideoSearchResults,
 } from "duck-duck-scrape";
