@@ -17,8 +17,5 @@ jobs:
       # OIDC trusted publishing needs npm >= 11.5
       - run: npm install -g npm@latest
       - run: npm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Auth via OIDC trusted publishing (configured on npmjs.com) — no token
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
