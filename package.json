@@ -1,6 +1,6 @@
 {
   "name": "web3-research-mcp",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Deep Research for crypto - free & fully local",
   "main": "dist/server.js",
   "type": "module",
