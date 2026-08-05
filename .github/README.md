@@ -1,11 +1,32 @@
-# Web3 Research MCP
-[![smithery badge](https://smithery.ai/badge/@aaronjmars/web3-research-mcp)](https://smithery.ai/server/@aaronjmars/web3-research-mcp)
+<p align="center">
+  <img src="../docs/assets/hero-animated.svg" alt="Web3 Research MCP — deep research for crypto, free and fully local. An MCP server with 13 tools across CoinGecko, CoinMarketCap, DeFiLlama and more; no API key required." width="100%" />
+</p>
 
-Deep Research for crypto - free & fully local 🧠
+<p align="center">
+  <strong>Star us&nbsp;❤️&nbsp;→</strong>&nbsp;&nbsp;
+  <a href="https://github.com/aaronjmars/web3-research-mcp/stargazers"><img src="../docs/assets/btn-star.svg" alt="Star Web3 Research MCP on GitHub" height="34" align="absmiddle"></a>&nbsp;&nbsp;
+  <a href="https://www.npmjs.com/package/web3-research-mcp"><img src="../docs/assets/btn-npm.svg" alt="web3-research-mcp on npm" height="34" align="absmiddle"></a>&nbsp;&nbsp;
+  <a href="https://x.com/aaronjmars"><img src="../docs/assets/btn-x.svg" alt="@aaronjmars on X" height="34" align="absmiddle"></a>
+</p>
 
-<a href="https://glama.ai/mcp/servers/@aaronjmars/web3-research-mcp">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/@aaronjmars/web3-research-mcp/badge" alt="Web3 Research MCP server" />
-</a>
+<p align="center">
+  <strong>Deep research for crypto - free &amp; fully local.</strong><br>
+  A local MCP server that researches any token across CoinGecko, CoinMarketCap, DeFiLlama and more - no API key, nothing leaves your machine.
+</p>
+
+<div align="center">
+
+[![stars](https://img.shields.io/github/stars/aaronjmars/web3-research-mcp?style=flat-square&label=stars&color=F4EFE1&labelColor=0d0c0a&logo=github&logoColor=F4EFE1)](https://github.com/aaronjmars/web3-research-mcp/stargazers)
+[![forks](https://img.shields.io/github/forks/aaronjmars/web3-research-mcp?style=flat-square&label=forks&color=F4EFE1&labelColor=0d0c0a&logo=github&logoColor=F4EFE1)](https://github.com/aaronjmars/web3-research-mcp/network/members)
+[![npm](https://img.shields.io/npm/v/web3-research-mcp?style=flat-square&label=npm&color=F4EFE1&labelColor=0d0c0a&logo=npm&logoColor=F4EFE1)](https://www.npmjs.com/package/web3-research-mcp)
+[![smithery](https://img.shields.io/badge/smithery-install-F4EFE1?style=flat-square&labelColor=0d0c0a)](https://smithery.ai/server/@aaronjmars/web3-research-mcp)
+[![license](https://img.shields.io/badge/license-MIT-F4EFE1?style=flat-square&labelColor=0d0c0a)](../LICENSE)
+
+</div>
+
+<p align="center">
+  <a href="https://glama.ai/mcp/servers/@aaronjmars/web3-research-mcp"><img width="380" height="200" src="https://glama.ai/mcp/servers/@aaronjmars/web3-research-mcp/badge" alt="Web3 Research MCP server" /></a>
+</p>
 
 ## 🚀 Preview
 
