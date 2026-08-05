@@ -23,11 +23,6 @@
 [![license](https://img.shields.io/badge/license-MIT-F4EFE1?style=flat-square&labelColor=0d0c0a)](../LICENSE)
 
 </div>
-
-<p align="center">
-  <a href="https://glama.ai/mcp/servers/@aaronjmars/web3-research-mcp"><img width="380" height="200" src="https://glama.ai/mcp/servers/@aaronjmars/web3-research-mcp/badge" alt="Web3 Research MCP server" /></a>
-</p>
-
 ## 🚀 Preview
 
 ![Preview](https://i.imgur.com/b9WfMSk.png)
