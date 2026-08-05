@@ -19,7 +19,6 @@
 [![stars](https://img.shields.io/github/stars/aaronjmars/web3-research-mcp?style=flat-square&label=stars&color=F4EFE1&labelColor=0d0c0a&logo=github&logoColor=F4EFE1)](https://github.com/aaronjmars/web3-research-mcp/stargazers)
 [![forks](https://img.shields.io/github/forks/aaronjmars/web3-research-mcp?style=flat-square&label=forks&color=F4EFE1&labelColor=0d0c0a&logo=github&logoColor=F4EFE1)](https://github.com/aaronjmars/web3-research-mcp/network/members)
 [![npm](https://img.shields.io/npm/v/web3-research-mcp?style=flat-square&label=npm&color=F4EFE1&labelColor=0d0c0a&logo=npm&logoColor=F4EFE1)](https://www.npmjs.com/package/web3-research-mcp)
-[![smithery](https://img.shields.io/badge/smithery-install-F4EFE1?style=flat-square&labelColor=0d0c0a)](https://smithery.ai/server/@aaronjmars/web3-research-mcp)
 [![license](https://img.shields.io/badge/license-MIT-F4EFE1?style=flat-square&labelColor=0d0c0a)](../LICENSE)
 
 </div>
