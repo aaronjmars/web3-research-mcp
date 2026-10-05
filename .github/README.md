@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../docs/assets/hero-animated.svg" alt="Web3 Research MCP — deep research for crypto, free and fully local. An MCP server with 13 tools across CoinGecko, CoinMarketCap, DeFiLlama and more; no API key required." width="100%" />
+  <img src="../docs/assets/hero-animated.svg" alt="Web3 Research MCP - deep research for crypto, free and fully local. An MCP server with 13 tools across CoinGecko, CoinMarketCap, DeFiLlama and more; no API key required." width="100%" />
 </p>
 
 <p align="center">
@@ -37,7 +37,7 @@
 
 ## 📋 Requirements
 
-- Node.js (v16 or higher)
+- Node.js 18 or higher
 
 ## 🔧 Installation & Setup
 
@@ -71,6 +71,12 @@ Add this to your Claude Desktop configuration file:
 
 Then restart Claude Desktop
 
+## 🔌 Using with Claude Code
+
+```bash
+claude mcp add web3-research-mcp -- npx -y web3-research-mcp@latest
+```
+
 ## 🔌 Using with Cursor
 
 Go to: Settings -> Cursor Settings -> MCP -> Add new global MCP server
@@ -88,6 +94,24 @@ Paste this into your Cursor ~/.cursor/mcp.json file. See Cursor MCP docs for mor
 ```
 
 Then restart Cursor
+
+## 🧩 Run from source
+
+```bash
+git clone https://github.com/aaronjmars/web3-research-mcp.git
+cd web3-research-mcp
+npm ci
+npm run build
+npm start   # MCP server over stdio
+```
+
+To point a client at your local build, use `"command": "node"` with `"args": ["/path/to/web3-research-mcp/dist/server.js"]`.
+
+## ⚙️ Configuration
+
+No API key is needed. One optional env var:
+
+- `COINGECKO_API_KEY`: CoinGecko Pro key. When unset, the free public API is used.
 
 ## 🛠️ Tools
 
@@ -157,7 +181,7 @@ Parameters:
 
 ### coingecko-data
 
-Fetches live market data directly from the CoinGecko public API — price, market cap, 24h/7d/30d changes, ATH/ATL, circulating supply, contract addresses across chains, and social/dev links. Bypasses the 403 issues of HTML scraping.
+Fetches live market data directly from the CoinGecko public API: price, market cap, 24h/7d/30d changes, ATH/ATL, circulating supply, contract addresses across chains, and social/dev links. Bypasses the 403 issues of HTML scraping.
 
 Parameters:
 - tokenName: Full name of the token (e.g., 'Bitcoin')
@@ -172,11 +196,11 @@ Optional: set `COINGECKO_API_KEY` in the environment to use a CoinGecko Pro API 
 Searches CoinGecko's coin index and returns candidate matches with their CoinGecko IDs. Useful when the ticker is ambiguous (e.g., multiple tokens with the same symbol).
 
 Parameters:
-- query: Search query — name, ticker, or contract address
+- query: Search query: name, ticker, or contract address
 
 ### coingecko-tickers
 
-Fetches active exchange listings for a token from CoinGecko — which CEXs/DEXs trade the pair, per-venue 24h USD volume, last price, bid-ask spread, trust score, and trade URL. Sorted by 24h USD volume desc; anomalies and stale prints are filtered out. Bypasses HTML scraping for the "where does this token actually trade" question.
+Fetches active exchange listings for a token from CoinGecko: which CEXs/DEXs trade the pair, per-venue 24h USD volume, last price, bid-ask spread, trust score, and trade URL. Sorted by 24h USD volume desc; anomalies and stale prints are filtered out. Bypasses HTML scraping for the "where does this token actually trade" question.
 
 Parameters:
 - tokenName: Full name of the token (e.g., 'Bitcoin')
@@ -187,7 +211,7 @@ No API key required. Uses the free public tier. Requests time out after 15s.
 
 ### defillama-data
 
-Fetches protocol data directly from the DeFiLlama public API — total TVL, ATH TVL with date, 30/90/365-day TVL change vs current, market cap (when available — DeFiLlama omits it for many protocols), per-chain TVL breakdown, fees (24h/7d/30d/all-time), token addresses, fundraising rounds, and links. Bypasses HTML scraping for the most common DeFi-protocol lookup.
+Fetches protocol data directly from the DeFiLlama public API: total TVL, ATH TVL with date, 30/90/365-day TVL change vs current, market cap (when available, since DeFiLlama omits it for many protocols), per-chain TVL breakdown, fees (24h/7d/30d/all-time), token addresses, fundraising rounds, and links. Bypasses HTML scraping for the most common DeFi-protocol lookup.
 
 Parameters:
 - tokenName: Full protocol/token name (e.g., 'Uniswap')
@@ -200,7 +224,7 @@ No API key required. Uses the free public API. Requests time out after 15s. The 
 Searches DeFiLlama's protocol index and returns candidate matches with their slugs, TVL, and category. Useful when the ticker is ambiguous (e.g., multiple protocols with similar names).
 
 Parameters:
-- query: Search query — protocol name, ticker, or slug
+- query: Search query: protocol name, ticker, or slug
 
 ## 📝 Prompts
 
