@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
-import { fmtUsd } from "../utils/format.js";
+import { fmtUsd, quoteInput } from "../utils/format.js";
 
 const DEFILLAMA_BASE = "https://api.llama.fi";
 const DEFILLAMA_TIMEOUT_MS = 15000;
@@ -166,7 +166,7 @@ async function resolveProtocol(
         protocol: pickHighestTvl(tickerMatches),
         ambiguous: tickerMatches.length > 1,
         candidateCount: tickerMatches.length,
-        matchedOn: `symbol "${tickerUpper}"`,
+        matchedOn: `symbol "${quoteInput(tickerUpper)}"`,
       };
     }
   }
@@ -180,7 +180,7 @@ async function resolveProtocol(
         protocol: pickHighestTvl(nameMatches),
         ambiguous: nameMatches.length > 1,
         candidateCount: nameMatches.length,
-        matchedOn: `name "${tokenName}"`,
+        matchedOn: `name "${quoteInput(tokenName)}"`,
       };
     }
   }
@@ -206,7 +206,7 @@ async function resolveProtocol(
         protocol: pickHighestTvl(containsMatches),
         ambiguous: containsMatches.length > 1,
         candidateCount: containsMatches.length,
-        matchedOn: `name contains "${tokenName}"`,
+        matchedOn: `name contains "${quoteInput(tokenName)}"`,
       };
     }
   }
@@ -470,7 +470,7 @@ export function registerDeFiLlamaTools(
             content: [
               {
                 type: "text",
-                text: `DeFiLlama: no protocol found matching ${tokenName} (${tokenTicker}). Use \`defillama-search\` to look up candidate slugs.`,
+                text: `DeFiLlama: no protocol found matching ${quoteInput(tokenName)} (${quoteInput(tokenTicker)}). Use \`defillama-search\` to look up candidate slugs.`,
               },
             ],
           };
@@ -606,7 +606,7 @@ export function registerDeFiLlamaTools(
             content: [
               {
                 type: "text",
-                text: `No DeFiLlama matches for "${query}"`,
+                text: `No DeFiLlama matches for "${quoteInput(query)}"`,
               },
             ],
           };
@@ -624,7 +624,7 @@ export function registerDeFiLlamaTools(
           content: [
             {
               type: "text",
-              text: `DeFiLlama matches for "${query}":\n\n${lines.join(
+              text: `DeFiLlama matches for "${quoteInput(query)}":\n\n${lines.join(
                 "\n"
               )}\n\nUse \`defillama-data\` with the matching name/ticker for full details.`,
             },

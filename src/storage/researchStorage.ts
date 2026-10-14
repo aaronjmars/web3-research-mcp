@@ -1,5 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
+import { escapeText } from "../utils/format.js";
 
 export interface ResearchLog {
   timestamp: string;
@@ -158,7 +159,7 @@ export class ResearchStorage {
   addLogEntry(message: string): void {
     const logEntry = {
       timestamp: new Date().toISOString(),
-      message,
+      message: escapeText(message),
     };
 
     this.currentResearch.logs.push(logEntry);
