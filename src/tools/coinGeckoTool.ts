@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import ResearchStorage from "../storage/researchStorage.js";
-import { fmtUsd } from "../utils/format.js";
+import { fmtUsd, quoteInput } from "../utils/format.js";
 
 const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY;
 const COINGECKO_BASE = COINGECKO_API_KEY
@@ -173,7 +173,7 @@ async function resolveCoinId(
           coin: pickBestRank(tickerMatches),
           ambiguous: tickerMatches.length > 1,
           candidateCount: tickerMatches.length,
-          matchedOn: `symbol "${tickerUpper}"`,
+          matchedOn: `symbol "${quoteInput(tickerUpper)}"`,
           query,
         };
       }
@@ -188,7 +188,7 @@ async function resolveCoinId(
           coin: pickBestRank(nameMatches),
           ambiguous: nameMatches.length > 1,
           candidateCount: nameMatches.length,
-          matchedOn: `name "${tokenName}"`,
+          matchedOn: `name "${quoteInput(tokenName)}"`,
           query,
         };
       }
@@ -199,7 +199,7 @@ async function resolveCoinId(
       coin: coins[0],
       ambiguous: coins.length > 1,
       candidateCount: coins.length,
-      matchedOn: `fuzzy match for "${query}"`,
+      matchedOn: `fuzzy match for "${quoteInput(query)}"`,
       query,
     };
   }
@@ -375,7 +375,7 @@ export function registerCoinGeckoTools(
             content: [
               {
                 type: "text",
-                text: `CoinGecko: no coin found matching ${tokenName} (${tokenTicker})`,
+                text: `CoinGecko: no coin found matching ${quoteInput(tokenName)} (${quoteInput(tokenTicker)})`,
               },
             ],
           };
@@ -466,7 +466,7 @@ export function registerCoinGeckoTools(
             content: [
               {
                 type: "text",
-                text: `No CoinGecko matches for "${query}"`,
+                text: `No CoinGecko matches for "${quoteInput(query)}"`,
               },
             ],
           };
@@ -483,7 +483,7 @@ export function registerCoinGeckoTools(
           content: [
             {
               type: "text",
-              text: `CoinGecko matches for "${query}":\n\n${lines.join(
+              text: `CoinGecko matches for "${quoteInput(query)}":\n\n${lines.join(
                 "\n"
               )}\n\nUse \`coingecko-data\` with the matching name/ticker for full details.`,
             },
@@ -534,7 +534,7 @@ export function registerCoinGeckoTools(
             content: [
               {
                 type: "text",
-                text: `CoinGecko: no coin found matching ${tokenName} (${tokenTicker})`,
+                text: `CoinGecko: no coin found matching ${quoteInput(tokenName)} (${quoteInput(tokenTicker)})`,
               },
             ],
           };

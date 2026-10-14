@@ -7,6 +7,7 @@ import {
   searchSource,
   sleep,
 } from "../utils/searchUtils.js";
+import { quoteInput } from "../utils/format.js";
 
 async function getResourceContent(
   url: string,
@@ -57,7 +58,7 @@ export function registerResearchTools(
           content: [
             {
               type: "text",
-              text: `Search results for "${query}" (${searchType}):\n\n${JSON.stringify(
+              text: `Search results for "${quoteInput(query)}" (${searchType}):\n\n${JSON.stringify(
                 results.results ? results.results.slice(0, 5) : [],
                 null,
                 2
@@ -152,7 +153,7 @@ export function registerResearchTools(
         content: [
           {
             type: "text",
-            text: `Created research plan for ${tokenName} (${tokenTicker}):\n\n${JSON.stringify(
+            text: `Created research plan for ${quoteInput(tokenName)} (${quoteInput(tokenTicker)}):\n\n${JSON.stringify(
               researchPlan,
               null,
               2
@@ -212,16 +213,16 @@ export function registerResearchTools(
           content: [
             {
               type: "text",
-              text: `Completed searches for ${tokenName} with keywords: ${keywords.join(
+              text: `Completed searches for ${quoteInput(tokenName)} with keywords: ${keywords.map(quoteInput).join(
                 ", "
               )}\n\nResults saved as resource: research://resource/${resourceId}\n\nHighlights:\n${Object.entries(
                 results
               )
                 .map(([keyword, data]) => {
                   if (Array.isArray(data) && data.length > 0) {
-                    return `- ${keyword}: ${data[0].title} (${data[0].url})`;
+                    return `- ${quoteInput(keyword)}: ${data[0].title} (${data[0].url})`;
                   }
-                  return `- ${keyword}: No results`;
+                  return `- ${quoteInput(keyword)}: No results`;
                 })
                 .join("\n")}`,
             },
@@ -265,7 +266,7 @@ export function registerResearchTools(
             content: [
               {
                 type: "text",
-                text: `Section '${section}' not found in research plan`,
+                text: `Section '${quoteInput(section)}' not found in research plan`,
               },
             ],
           };
@@ -288,7 +289,7 @@ export function registerResearchTools(
           content: [
             {
               type: "text",
-              text: `Updated status of '${section}' to '${status}'`,
+              text: `Updated status of '${quoteInput(section)}' to '${status}'`,
             },
           ],
         };
@@ -403,7 +404,7 @@ export function registerResearchTools(
           [source]: results,
         });
 
-        let responseText = `Search results for ${source} about ${tokenName} (${tokenTicker}):\n\n`;
+        let responseText = `Search results for ${quoteInput(source)} about ${quoteInput(tokenName)} (${quoteInput(tokenTicker)}):\n\n`;
 
         if (results.results && results.results.length > 0) {
           const topResults = results.results.slice(0, 5);
@@ -453,7 +454,7 @@ export function registerResearchTools(
           content: [
             {
               type: "text",
-              text: `Error searching ${source}: ${error}`,
+              text: `Error searching ${quoteInput(source)}: ${error}`,
             },
           ],
         };
@@ -525,7 +526,7 @@ export function registerResearchTools(
             content: [
               {
                 type: "text",
-                text: `No results found for ${source}`,
+                text: `No results found for ${quoteInput(source)}`,
               },
             ],
           };
@@ -557,7 +558,7 @@ export function registerResearchTools(
               content: [
                 {
                   type: "text",
-                  text: `Researched ${source} for ${tokenName} (${tokenTicker}).\n\nTop result: ${
+                  text: `Researched ${quoteInput(source)} for ${quoteInput(tokenName)} (${quoteInput(tokenTicker)}).\n\nTop result: ${
                     topResults[0].title
                   }\n\nContent saved as resource: research://resource/${resourceId}\n\nAll search results:\n${JSON.stringify(
                     topResults,
@@ -575,7 +576,7 @@ export function registerResearchTools(
               content: [
                 {
                   type: "text",
-                  text: `Found search results for ${source}, but couldn't fetch content: ${error}\n\nSearch results:\n${JSON.stringify(
+                  text: `Found search results for ${quoteInput(source)}, but couldn't fetch content: ${error}\n\nSearch results:\n${JSON.stringify(
                     topResults,
                     null,
                     2
@@ -590,7 +591,7 @@ export function registerResearchTools(
           content: [
             {
               type: "text",
-              text: `Search results for ${source}:\n\n${JSON.stringify(
+              text: `Search results for ${quoteInput(source)}:\n\n${JSON.stringify(
                 topResults,
                 null,
                 2
@@ -605,7 +606,7 @@ export function registerResearchTools(
           content: [
             {
               type: "text",
-              text: `Error researching ${source}: ${error}`,
+              text: `Error researching ${quoteInput(source)}: ${error}`,
             },
           ],
         };

@@ -50,7 +50,8 @@ src/tools/researchTools.ts  search, fetch-content, research-with-keywords,
 src/tools/coinGeckoTool.ts  coingecko-data / coingecko-search / coingecko-tickers
 src/tools/defiLlamaTool.ts  defillama-data / defillama-search
 src/utils/searchUtils.ts    performSearch / fetchContent / searchSource (DDG + fetch)
-src/utils/format.ts         fmtUsd — shared number formatting
+src/utils/format.ts         fmtUsd number formatting; quoteInput/escapeText for
+                            caller text echoed in tool output and logs
 src/storage/researchStorage.ts  in-memory + on-disk research state and resources,
                             and the ResearchData / ResearchResource types
 ```
