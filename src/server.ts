@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+
 import {
   McpServer,
   ResourceTemplate,
@@ -9,10 +11,13 @@ import ResearchStorage from "./storage/researchStorage.js";
 import { registerAllTools } from "./tools/index.js";
 
 const storage = new ResearchStorage("./research_data");
+const packageversion = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8")
+) as { version: string };
 
 const server = new McpServer({
   name: "web3-research-mcp",
-  version: "1.0.4",
+  version: packageversion.version,
 });
 
 server.resource("research-status", "research://status", async (uri) => ({
