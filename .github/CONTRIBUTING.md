@@ -1,8 +1,9 @@
 # Contributing to Web3 Research MCP
 
-Thanks for helping improve Web3 Research MCP — a free, fully-local MCP server for
-deep crypto research. It's a TypeScript MCP server with no API keys, so it's easy
-to run and hack on. This guide covers setup and how to land a PR.
+Thanks for helping improve Web3 Research MCP — a free MCP server that runs
+locally and queries external search/data sources for deep crypto research. Most
+public sources need no API key; CoinGecko Pro is optional. This guide covers
+setup and how to land a PR.
 
 ## Ways to contribute
 
