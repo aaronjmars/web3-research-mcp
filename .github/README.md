@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../docs/assets/hero-animated.svg" alt="Web3 Research MCP - deep research for crypto, free and fully local. An MCP server with 13 tools across CoinGecko, CoinMarketCap, DeFiLlama and more; no API key required." width="100%" />
+  <img src="../docs/assets/hero-animated.svg" alt="Web3 Research MCP - deep research for crypto from a locally run server. Searches and data requests go to external providers; research data is stored locally." width="100%" />
 </p>
 
 <p align="center">
@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <strong>Deep research for crypto - free &amp; fully local.</strong><br>
-  A local MCP server that researches any token across CoinGecko, CoinMarketCap, DeFiLlama and more - no API key, nothing leaves your machine.
+  <strong>Deep crypto research from a locally run MCP server.</strong><br>
+  Searches and data requests go to their external providers, and page-fetch tools contact the supplied URLs. Research state and saved resources are stored locally; public sources need no API key.
 </p>
 
 <div align="center">

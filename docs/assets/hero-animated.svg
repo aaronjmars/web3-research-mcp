@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 480" width="1600" height="480" role="img" aria-label="WEB3 RESEARCH — deep research for crypto, free and fully local. An MCP server: 13 tools across CoinGecko, DeFiLlama and more, no API key required.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 480" width="1600" height="480" role="img" aria-label="WEB3 RESEARCH — deep research for crypto from a local MCP server. Searches and data requests go to external providers; research data is stored locally.">
   <defs>
     <pattern id="halftone" width="7" height="7" patternUnits="userSpaceOnUse">
       <circle cx="1.4" cy="1.4" r="1.1" fill="#F4EFE1"/>
@@ -65,7 +65,7 @@
   <!-- tagline -->
   <text x="800" y="302" text-anchor="middle"
     font-family="'Arial Black','Helvetica Neue',Helvetica,Arial,sans-serif" font-weight="800" font-style="italic"
-    font-size="28" letter-spacing="1.5" fill="#F4EFE1" fill-opacity="0.92">Deep research for crypto - free &amp; fully local.</text>
+    font-size="28" letter-spacing="1.5" fill="#F4EFE1" fill-opacity="0.92">Deep research for crypto - free, runs locally.</text>
 
   <!-- stat bubbles -->
   <g font-family="'Arial Black','Helvetica Neue',Helvetica,Arial,sans-serif" font-weight="800" font-style="italic" font-size="20" fill="#0d0c0a">

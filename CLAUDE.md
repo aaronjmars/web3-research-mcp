@@ -5,9 +5,10 @@ Guidance for AI agents (Claude Code and others) working in this repository.
 ## What this is
 
 `web3-research-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io)
-server that gives an AI client (Claude Desktop, Cursor, etc.) a toolset for
-deep, free, and fully local crypto research — web search plus direct CoinGecko
-and DeFiLlama API access, with results stored as referenceable MCP resources.
+server that runs locally and gives an AI client (Claude Desktop, Cursor, etc.) a
+toolset for deep crypto research. It sends searches and token lookups to external
+providers (including CoinGecko and DeFiLlama), fetches supplied page URLs, and
+stores research state/resources locally.
 
 It runs over **stdio** as a single Node process. There is no database and no
 network service to stand up: the client launches it via `npx web3-research-mcp`
