@@ -5,7 +5,7 @@ Web3 Research MCP is a local, read-only MCP server that researches crypto tokens
 DeFiLlama, DuckDuckGo, arbitrary result URLs) and handing it back to an LLM. It
 needs no API keys and holds no funds, so the realistic risks are **prompt
 injection from scraped content, outbound-request abuse (SSRF), and supply chain**
-(it ships to npm, Smithery, and as a Docker image). This policy covers what's in
+(it ships to npm and as a Docker image). This policy covers what's in
 scope and how to report privately.
 
 ## Reporting a vulnerability
@@ -28,7 +28,7 @@ Please include what you can:
 - The impact you can demonstrate — the server making requests to internal/
   unintended addresses, scraped content driving the client LLM to take unintended
   actions, resource exhaustion, or code execution.
-- Node version and how you ran it (npx, local build, Docker, Smithery).
+- Node version and how you ran it (npx, local build, Docker).
 
 **Response targets** — best effort; this is a small project:
 
@@ -67,7 +67,7 @@ and the latest
 - **Outbound requests are a surface.** The server fetches URLs derived from search
   results. Input that makes it request internal addresses, non-HTTP schemes, or
   otherwise abuse the fetch layer (SSRF) is in scope.
-- **Supply chain matters.** The package is published to npm and Smithery and built
+- **Supply chain matters.** The package is published to npm and built
   into a Docker image via CI (`.github/workflows/publish.yml`). Issues in the
   release pipeline, dependency integrity, or the published artifacts are in scope.
 
@@ -79,7 +79,7 @@ and the latest
 - Prompt injection from scraped content that crosses into unintended tool use.
 - Denial of service / resource exhaustion via crafted inputs or responses.
 - Code execution, path traversal, or injection in the server or CLI.
-- Supply-chain issues in the npm/Smithery/Docker release path.
+- Supply-chain issues in the npm/Docker release path.
 
 **Out of scope:**
 
