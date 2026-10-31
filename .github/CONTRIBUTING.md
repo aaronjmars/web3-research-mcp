@@ -13,7 +13,7 @@ setup and how to land a PR.
   entrypoint.
 - **Robustness** — better handling of untrusted scraped content, timeouts, and
   malformed responses (see [`SECURITY.md`](SECURITY.md)).
-- **Docs** — setup for a new MCP client, Smithery, or Docker.
+- **Docs** — setup for a new MCP client or Docker.
 
 ## Before you start
 
@@ -57,7 +57,7 @@ node --check bin/cli.js       # CLI parses
 node bin/cli.js --help        # CLI smoke test
 ```
 
-Releases to npm/Smithery/Docker run from `.github/workflows/publish.yml` on tag —
+Releases to npm/Docker run from `.github/workflows/publish.yml` on tag —
 don't publish by hand.
 
 ## Submitting a pull request

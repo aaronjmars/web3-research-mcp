@@ -41,13 +41,15 @@
 
 ## 🔧 Installation & Setup
 
-### Installing via Smithery
+### Run with npx
 
-To install web3-research-mcp for Claude Desktop automatically via [Smithery](https://smithery.ai/server/web3-research-mcp):
+The server is published on npm, so any MCP client can start it with npx. No install step or API key is needed:
 
 ```bash
-npx -y @smithery/cli install web3-research-mcp --client claude
+npx -y web3-research-mcp@latest
 ```
+
+Client-specific setup is below.
 
 ## 🔌 Using with Claude Desktop
 
