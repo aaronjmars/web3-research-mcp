@@ -152,7 +152,10 @@ Parameters:
 
 ### fetch-content
 
-Fetches content from a URL and saves it as a resource.
+Fetches content from a URL and saves it as a resource. Only public http(s)
+URLs are fetched: hosts that resolve to loopback, private, link-local (such as
+cloud metadata) or other reserved addresses are refused, and each redirect is
+checked the same way (up to 5 hops).
 
 Parameters:
 - url: URL to fetch content from

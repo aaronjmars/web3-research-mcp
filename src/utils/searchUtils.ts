@@ -10,8 +10,12 @@ import {
   type VideoSearchResults,
 } from "duck-duck-scrape";
 import * as cheerio from "cheerio";
+import { assertPublicHttpUrl, BlockedUrlError } from "./urlSafety.js";
 
 const FETCH_CONTENT_TIMEOUT_MS = 15000;
+/** Redirect hops followed per fetch; each hop is re-checked by the URL guard. */
+const MAX_REDIRECTS = 5;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 export type SearchType = "web" | "news" | "images" | "videos";
 export type ContentFormat = "text" | "html" | "markdown" | "json";
@@ -60,14 +64,38 @@ export async function performSearch(
   }
 }
 
+/**
+ * `fetch` that follows redirects by hand, so the first URL and every redirect
+ * hop pass `assertPublicHttpUrl` (scheme + resolved-address check) first.
+ */
+async function fetchPublic(url: string, init: RequestInit): Promise<Response> {
+  let target = await assertPublicHttpUrl(url);
+
+  for (let hop = 0; ; hop++) {
+    const response = await fetch(target, { ...init, redirect: "manual" });
+
+    const location = response.headers.get("location");
+    if (!REDIRECT_STATUSES.has(response.status) || !location) {
+      return response;
+    }
+
+    await response.body?.cancel();
+    if (hop >= MAX_REDIRECTS) {
+      throw new BlockedUrlError(
+        `Too many redirects (more than ${MAX_REDIRECTS})`
+      );
+    }
+    target = await assertPublicHttpUrl(new URL(location, target).toString());
+  }
+}
+
 export async function fetchContent(
   url: string,
   format: ContentFormat = "text",
   retries = 2
 ): Promise<string> {
-  if (url.startsWith("research://")) {
-    throw new Error("Only HTTP(S) protocols are supported");
-  }
+  // Fail fast on a refused URL, before the politeness delay and retries.
+  await assertPublicHttpUrl(url);
 
   for (let i = 0; i <= retries; i++) {
     // AbortController rather than AbortSignal.timeout() so the AbortError can be
@@ -81,7 +109,7 @@ export async function fetchContent(
     try {
       await sleep(1000 + Math.random() * 2000);
 
-      const response = await fetch(url, {
+      const response = await fetchPublic(url, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
@@ -101,7 +129,6 @@ export async function fetchContent(
           "Sec-Fetch-Site": "none",
           "Sec-Fetch-User": "?1",
         },
-        redirect: "follow",
         signal: controller.signal,
       });
 
@@ -138,6 +165,7 @@ export async function fetchContent(
         }
       }
     } catch (error) {
+      if (error instanceof BlockedUrlError) throw error;
       const wrapped =
         error instanceof Error && error.name === "AbortError"
           ? new Error(
