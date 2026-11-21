@@ -40,7 +40,7 @@
     "typescript": "^7.0.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22"
   },
   "overrides": {
     "@hono/node-server": "^2.0.5",
