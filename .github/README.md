@@ -37,7 +37,7 @@
 
 ## 📋 Requirements
 
-- Node.js 18 or higher
+- Node.js 22 or higher
 
 ## 🔧 Installation & Setup
 

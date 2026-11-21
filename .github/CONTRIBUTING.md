@@ -28,7 +28,7 @@ setup and how to land a PR.
 
 ## Development setup
 
-**Prerequisites:** Node.js 20+ (CI covers 20 and 22).
+**Prerequisites:** Node.js 22+ (CI covers 22 and 24).
 
 ```bash
 git clone https://github.com/aaronjmars/web3-research-mcp.git && cd web3-research-mcp
@@ -46,7 +46,7 @@ node bin/cli.js --help
 
 ## Testing & CI
 
-CI (`.github/workflows/ci.yml`) builds on Node 20 and 22 and smoke-tests the CLI.
+CI (`.github/workflows/ci.yml`) builds on Node 22 and 24 and smoke-tests the CLI.
 Reproduce it locally before pushing:
 
 ```bash

@@ -4,15 +4,15 @@ on:
     tags: ["v*"]
 permissions:
   contents: read
-  id-token: write
 jobs:
   test:
     name: Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [22.x, 24.x]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -43,14 +43,18 @@ jobs:
   publish:
     needs: [test]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # OIDC token for npm trusted publishing: this job only, not the test matrix.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-      # OIDC trusted publishing needs npm >= 11.5
-      - run: npm install -g npm@latest
-      - run: npm install
-      # Auth via OIDC trusted publishing (configured on npmjs.com) — no token
+      - run: npm ci
+      # Auth via OIDC trusted publishing (configured on npmjs.com) - no token.
+      # Needs npm >= 11.5, which Node 24 ships, so no npm self-upgrade.
       - run: npm publish --provenance --access public
